@@ -3,6 +3,8 @@ use std::io::BufWriter;
 use std::io::Write as IoWrite;
 use std::path::Path;
 
+mod vec3;
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let path = Path::new("image.ppm");
     let mut o = BufWriter::new(File::create(&path)?);
