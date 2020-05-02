@@ -1,8 +1,10 @@
+use color::Color;
 use std::fs::File;
 use std::io::BufWriter;
 use std::io::Write as IoWrite;
 use std::path::Path;
 
+mod color;
 mod vec3;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -19,18 +21,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     for j in (0..height).rev() {
         for i in 0..width {
-            let r = i as f32 / width as f32;
-            let g = j as f32 / height as f32;
-            let b = 0.2;
-
-            let ir = (255.99 * r) as i32;
-            let ig = (255.99 * g) as i32;
-            let ib = (255.99 * b) as i32;
+            let c = Color::from_ratio(
+                i as f32 / width as f32,
+                j as f32 / height as f32,
+                0.2,
+            );
 
             writeln!(
                 &mut o,
                 "{:?} {:?} {:?}",
-                ir, ig, ib
+                c.r, c.g, c.b
             )?;
         }
     }
