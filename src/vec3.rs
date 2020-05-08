@@ -19,9 +19,9 @@ impl Vec3 {
     }
 
     pub fn dot(&self) -> Nm {
-        (self.x * self.x
+        self.x * self.x
             + self.y * self.y
-            + self.z * self.z)
+            + self.z * self.z
     }
 
     pub fn unit(&self) -> Self {
@@ -34,14 +34,13 @@ impl Vec3 {
 impl ops::Add<Vec3> for Vec3 {
     type Output = Self;
     fn add(self, rhs: Vec3) -> Self::Output {
-        Vec3 {
-            x: self.x + rhs.x,
-            y: self.y + rhs.y,
-            z: self.z + rhs.z,
-        }
+        Vec3::new(
+            self.x + rhs.x,
+            self.y + rhs.y,
+            self.z + rhs.z,
+        )
     }
 }
-
 
 impl ops::Add<Nm> for Vec3 {
     type Output = Self;
@@ -53,11 +52,11 @@ impl ops::Add<Nm> for Vec3 {
 impl ops::Mul<Vec3> for Vec3 {
     type Output = Self;
     fn mul(self, rhs: Vec3) -> Self::Output {
-        Vec3 {
-            x: self.x * rhs.x,
-            y: self.y * rhs.y,
-            z: self.z * rhs.z,
-        }
+        Vec3::new(
+            self.x * rhs.x,
+            self.y * rhs.y,
+            self.z * rhs.z,
+        )
     }
 }
 
@@ -67,7 +66,6 @@ impl ops::Mul<Nm> for Vec3 {
         self * Vec3::from(rhs)
     }
 }
-
 
 impl ops::Div<Vec3> for Vec3 {
     type Output = Self;
@@ -88,11 +86,10 @@ impl ops::Div<Nm> for Vec3 {
 }
 
 impl From<Nm> for Vec3 {
-     fn from(n: Nm) -> Self {
+    fn from(n: Nm) -> Self {
         Vec3::new(n, n, n)
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -126,7 +123,7 @@ mod tests {
                 y: 3.,
                 z: 7.,
             }
-                .length(),
+            .length(),
             9.69536
         );
     }
@@ -135,7 +132,11 @@ mod tests {
     fn units() {
         assert_eq!(
             Vec3::new(5., 6., 3.).unit(),
-            Vec3 { x: 0.59761435, y: 0.71713716, z: 0.35856858 }
+            Vec3 {
+                x: 0.59761435,
+                y: 0.71713716,
+                z: 0.35856858
+            }
         )
     }
 }

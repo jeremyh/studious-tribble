@@ -20,15 +20,15 @@ impl Ray {
 
 }
 
-
+#[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn point_at() {
         let r = Ray {
-            origin: Vec3 { x: 1., y: 2., z: 3. },
-            direction: Vec3 { x: 0.1, y: 0.2, z: 0.3 },
+            origin: Vec3::new(1., 2., 3.),
+            direction: Vec3::new(0.1, 0.2, 0.3),
         };
 
         assert_eq!(

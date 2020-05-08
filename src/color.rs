@@ -23,6 +23,7 @@ impl Color {
     }
 }
 
+#[cfg(test)]
 mod tests {
     use super::*;
 
