@@ -1,5 +1,4 @@
 use std::ops;
-use std::ops::Neg;
 
 pub type Nm = f32;
 
@@ -24,9 +23,7 @@ impl Vec3 {
     }
 
     pub fn dot(&self, o: &Self) -> Nm {
-        self.x * o.x
-            + self.y * o.y
-            + self.z * o.z
+        self.x * o.x + self.y * o.y + self.z * o.z
     }
 
     pub fn unit(&self) -> Self {
@@ -58,7 +55,11 @@ impl ops::Neg for Vec3 {
     type Output = Self;
 
     fn neg(self) -> Self::Output {
-        Vec3 { x: -self.x, y: -self.y, z: -self.z }
+        Vec3 {
+            x: -self.x,
+            y: -self.y,
+            z: -self.z,
+        }
     }
 }
 
@@ -143,7 +144,7 @@ mod tests {
                 y: 3.,
                 z: 7.,
             }
-                .length(),
+            .length(),
             9.69536
         );
     }

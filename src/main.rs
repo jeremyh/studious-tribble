@@ -25,19 +25,39 @@ const ONE: Vec3 = Vec3 {
     z: 1.,
 };
 
-fn hit_sphere(center: Vec3, radius: f32, ray: &Ray) -> bool {
+/// Does the ray hit our sphere?
+/// If so, return the time t of the hit.
+fn hit_sphere(
+    center: Vec3,
+    radius: f32,
+    ray: &Ray,
+) -> Option<f32> {
     let oc = ray.origin - center;
     let a = ray.direction.dots();
     let b = 2.0 * oc.dot(&ray.direction);
     let c = oc.dots() - radius * radius;
     let discriminant = b * b - 4. * a * c;
 
-    discriminant > 0.
+    if discriminant > 0. {
+        Some((-b - discriminant.sqrt()) / (2.0 * a))
+    } else {
+        None
+    }
 }
 
 fn color(ray: &Ray) -> Color {
-    if hit_sphere(Vec3::new(0., 0., -1.), 0.5, ray) {
-        return Color::RED;
+    if let Some(t) =
+        hit_sphere(Vec3::new(0., 0., -1.), 0.5, ray)
+    {
+        let surface_normal = (ray.point_at(t)
+            - Vec3::new(0., 0., -1.))
+        .unit();
+
+        // Normal was in range -1 to +1
+        // Convert to range 0-1 for our colors.
+        return Color::from(
+            (surface_normal + 1.) * 0.5,
+        );
     }
     let unit_direction = ray.direction.unit();
     let t = 0.5 * (unit_direction.y + 1.);
