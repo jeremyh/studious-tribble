@@ -5,8 +5,26 @@ authors = ["Jeremy Hooke <jez@stulk.com>"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+#
+
+
+
+# Install git hooks so we can only commit when checks pass.
+[dev-dependencies.cargo-husky]
+version = "1"
+default-features = false # Disable features which are enabled by default
+features = [
+    "precommit-hook",
+    "run-cargo-test",
+    "run-cargo-clippy",
+    "run-cargo-fmt"
+]
 
 [dependencies]
 anyhow = "1.0"
 structopt="0.3"
+
+cargo-husky = "1"
+
+
 
