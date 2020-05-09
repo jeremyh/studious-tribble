@@ -25,8 +25,21 @@ const ONE: Vec3 = Vec3 {
     z: 1.,
 };
 
-fn color(r: &Ray) -> Color {
-    let unit_direction = r.direction.unit();
+fn hit_sphere(center: Vec3, radius: f32, ray: &Ray) -> bool {
+    let oc = ray.origin - center;
+    let a = ray.direction.dots();
+    let b = 2.0 * oc.dot(&ray.direction);
+    let c = oc.dots() - radius * radius;
+    let discriminant = b * b - 4. * a * c;
+
+    discriminant > 0.
+}
+
+fn color(ray: &Ray) -> Color {
+    if hit_sphere(Vec3::new(0., 0., -1.), 0.5, ray) {
+        return Color::RED;
+    }
+    let unit_direction = ray.direction.unit();
     let t = 0.5 * (unit_direction.y + 1.);
 
     Color::linear(Color::WHITE, Color::SKY_BLUE, t)
@@ -41,7 +54,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let vertical = Vec3::new(0., 2., 0.);
     let origin = ZERO;
 
-    let (width, height) = (200, 100);
+    const SIZE: (i32, i32) = (400, 200);
+    let (width, height) = SIZE;
+
     writeln!(
         &mut o,
         "P3\n{nx} {ny}\n255",

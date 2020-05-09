@@ -19,6 +19,11 @@ impl Color {
         g: 178,
         b: 255,
     };
+    pub const RED: Color = Color {
+        r: 255,
+        g: 0,
+        b: 0,
+    };
 
     pub fn linear(
         start: Color,
