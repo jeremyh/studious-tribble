@@ -10,6 +10,17 @@ pub struct Vec3 {
 }
 
 impl Vec3 {
+    pub const ZERO: Vec3 = Vec3 {
+        x: 0.,
+        y: 0.,
+        z: 0.,
+    };
+    pub const ONE: Vec3 = Vec3 {
+        x: 1.,
+        y: 1.,
+        z: 1.,
+    };
+
     pub fn new(x: Nm, y: Nm, z: Nm) -> Self {
         Vec3 { x, y, z }
     }
