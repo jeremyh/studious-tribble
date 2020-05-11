@@ -117,6 +117,14 @@ impl ops::Div<Nm> for Vec3 {
     }
 }
 
+impl ops::AddAssign<Vec3> for Vec3 {
+    fn add_assign(&mut self, rhs: Vec3) {
+        self.x += rhs.x;
+        self.y += rhs.y;
+        self.z += rhs.z;
+    }
+}
+
 impl From<Nm> for Vec3 {
     fn from(n: Nm) -> Self {
         Vec3::new(n, n, n)
