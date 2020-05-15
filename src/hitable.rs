@@ -29,10 +29,11 @@ impl Hitable for Sphere {
         ray: &Ray,
         within_t: &Range<f32>,
     ) -> Option<Hit> {
-        let oc = ray.origin - self.center;
-        let a = ray.direction.dots();
+        let oc: Vec3 = ray.origin - self.center;
+        let a = ray.direction.squared_length();
         let b = oc.dot(&ray.direction);
-        let c = oc.dots() - self.radius * self.radius;
+        let c = oc.squared_length()
+            - self.radius * self.radius;
         let discriminant = b * b - a * c;
 
         if discriminant <= 0. {

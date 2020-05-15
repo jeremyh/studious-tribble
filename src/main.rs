@@ -24,13 +24,28 @@ mod ray;
 mod scene;
 mod vec3;
 
+fn random_in_unit_sphere() -> Vec3 {
+    let mut p: Vec3;
+    loop {
+        p = Vec3::random() * 2.0 - Vec3::ONE;
+
+        if p.squared_length() < 1.0 {
+            return p;
+        }
+    }
+}
 fn color(ray: &Ray, scene: &dyn Hitable) -> Color {
     if let Some(h) =
-        scene.hit(&ray, &(0f32..f32::INFINITY))
+        scene.hit(&ray, &(0.001f32..f32::INFINITY))
     {
+        let target: Vec3 =
+            h.p + h.normal + random_in_unit_sphere();
         // Normal was in range -1 to +1
         // Convert to range 0-1 for our colors.
-        return Color::from((h.normal + 1.) * 0.5);
+        return color(
+            &Ray::new(h.p, target - h.p),
+            scene,
+        ) * 0.5;
     }
     let unit_direction = ray.direction.unit();
     let t = 0.5 * (unit_direction.y + 1.);

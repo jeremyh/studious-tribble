@@ -25,11 +25,18 @@ impl Vec3 {
         Vec3 { x, y, z }
     }
 
+    pub fn random() -> Self {
+        Self::new(
+            rand::random(),
+            rand::random(),
+            rand::random(),
+        )
+    }
     pub fn length(&self) -> Nm {
-        self.dots().sqrt()
+        self.squared_length().sqrt()
     }
 
-    pub fn dots(&self) -> Nm {
+    pub fn squared_length(&self) -> Nm {
         self.dot(self)
     }
 
