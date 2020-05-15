@@ -34,6 +34,7 @@ fn random_in_unit_sphere() -> Vec3 {
         }
     }
 }
+
 fn color(ray: &Ray, scene: &dyn Hitable) -> Color {
     if let Some(h) =
         scene.hit(&ray, &(0.001f32..f32::INFINITY))
@@ -45,7 +46,8 @@ fn color(ray: &Ray, scene: &dyn Hitable) -> Color {
         return color(
             &Ray::new(h.p, target - h.p),
             scene,
-        ) * 0.5;
+        )
+        .darken(2.);
     }
     let unit_direction = ray.direction.unit();
     let t = 0.5 * (unit_direction.y + 1.);
@@ -120,7 +122,8 @@ fn render(
 
     for j in (0..height).rev() {
         for i in 0..width {
-            let mut color_samples = Vec3::ZERO;
+            let mut color_samples = Color::BLACK;
+
             for s in 0..samples {
                 let u = (i as Nm
                     + rand::random::<f32>())
@@ -130,17 +133,20 @@ fn render(
                     / (height as Nm);
                 let ray: Ray = camera.ray(u, v);
 
-                color_samples +=
-                    color(&ray, scene).into();
+                color_samples += color(&ray, scene);
             }
-            let c: Color = (color_samples
-                / (samples as f32))
-                .into();
-            writeln!(
-                &mut o,
-                "{:?} {:?} {:?}",
-                c.r, c.g, c.b
-            )?;
+
+            {
+                let (r, g, b) = color_samples
+                    .darken(samples as f32)
+                    .web_color();
+
+                writeln!(
+                    &mut o,
+                    "{:?} {:?} {:?}",
+                    r, g, b,
+                )?;
+            }
         }
     }
     Ok(())

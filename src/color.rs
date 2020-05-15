@@ -1,25 +1,34 @@
 use crate::vec3::Vec3;
-use std::ops::Mul;
+use core::ops;
 
 #[derive(PartialEq, Debug, Copy, Clone)]
 pub struct Color {
-    pub r: u8,
-    pub g: u8,
-    pub b: u8,
+    pub r: f32,
+    pub g: f32,
+    pub b: f32,
 }
 
 impl Color {
     pub const WHITE: Color = Color {
-        r: 255,
-        g: 255,
-        b: 255,
+        r: 1.0,
+        g: 1.0,
+        b: 1.0,
+    };
+    pub const BLACK: Color = Color {
+        r: 0.0,
+        g: 0.0,
+        b: 0.0,
     };
     pub const SKY_BLUE: Color = Color {
-        r: 127,
-        g: 178,
-        b: 255,
+        r: 0.5,
+        g: 0.75,
+        b: 1.0,
     };
-    pub const RED: Color = Color { r: 255, g: 0, b: 0 };
+    pub const RED: Color = Color {
+        r: 1.0,
+        g: 0.,
+        b: 0.,
+    };
 
     pub fn linear(
         start: Color,
@@ -31,41 +40,45 @@ impl Color {
 
         Color::from(start * (1. - t) + end * t)
     }
-}
 
-impl Mul<f32> for Color {
-    type Output = Color;
-    fn mul(self, rhs: f32) -> Self::Output {
-        let scale = |x: u8| ((x as f32) * rhs) as u8;
+    pub fn web_color(&self) -> (u8, u8, u8) {
+        let gamma_correct =
+            |i: f32| (i.powf(1.0 / 1.8));
+        let to8 = |i: f32| (i * 255.99) as u8;
 
+        (to8(self.r), to8(self.g), to8(self.b))
+    }
+
+    pub fn darken(&self, a: f32) -> Self {
         Color {
-            r: scale(self.r),
-            g: scale(self.g),
-            b: scale(self.b),
+            r: self.r / a,
+            g: self.g / a,
+            b: self.b / a,
         }
     }
 }
 
 impl From<Vec3> for Color {
     fn from(v: Vec3) -> Self {
-        let to8 = |i: f32| (i * 255.99) as u8;
-
         Color {
-            r: to8(v.x),
-            g: to8(v.y),
-            b: to8(v.z),
+            r: v.x,
+            g: v.y,
+            b: v.z,
         }
     }
 }
 
 impl Into<Vec3> for Color {
     fn into(self) -> Vec3 {
-        let from8 = |i: u8| (i as f32) / 255.99;
-        Vec3::new(
-            from8(self.r),
-            from8(self.g),
-            from8(self.b),
-        )
+        Vec3::new(self.r, self.g, self.b)
+    }
+}
+
+impl ops::AddAssign<Color> for Color {
+    fn add_assign(&mut self, rhs: Color) {
+        self.r += rhs.r;
+        self.g += rhs.g;
+        self.b += rhs.b;
     }
 }
 
@@ -76,12 +89,9 @@ mod tests {
     #[test]
     fn conversion_from_ratio() {
         assert_eq!(
-            Color::from(Vec3::new(0.4, 1.0, 0.0)),
-            Color {
-                r: 102,
-                g: 255,
-                b: 0,
-            }
+            Color::from(Vec3::new(0.4, 1.0, 0.0))
+                .web_color(),
+            (102, 255, 0)
         )
     }
 }
