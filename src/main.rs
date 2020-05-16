@@ -12,6 +12,7 @@ use color::Color;
 use vec3::Nm;
 
 use crate::hitable::{Hitable, Sphere};
+use crate::material::Lambertian;
 use crate::ray::Ray;
 use crate::scene::Scene;
 use crate::vec3::Vec3;
@@ -20,34 +21,34 @@ use camera::Camera;
 mod camera;
 mod color;
 mod hitable;
+mod material;
 mod ray;
 mod scene;
 mod vec3;
 
-fn random_in_unit_sphere() -> Vec3 {
-    let mut p: Vec3;
-    loop {
-        p = Vec3::random() * 2.0 - Vec3::ONE;
-
-        if p.squared_length() < 1.0 {
-            return p;
-        }
-    }
-}
-
-fn color(ray: &Ray, scene: &dyn Hitable) -> Color {
-    if let Some(h) =
+fn color(
+    ray: &Ray,
+    scene: &dyn Hitable,
+    depth: i32,
+) -> Color {
+    if let Some(hit) =
         scene.hit(&ray, &(0.001f32..f32::INFINITY))
     {
-        let target: Vec3 =
-            h.p + h.normal + random_in_unit_sphere();
-        // Normal was in range -1 to +1
-        // Convert to range 0-1 for our colors.
-        return color(
-            &Ray::new(h.p, target - h.p),
-            scene,
-        )
-        .darken(2.);
+        if depth > 50 {
+            return Color::BLACK;
+        }
+        if let Some(scatter) =
+            hit.material.scatter(ray, &hit)
+        {
+            return color(
+                &scatter.ray,
+                scene,
+                depth + 1,
+            )
+            .attenuate(scatter.attenuation);
+        } else {
+            return Color::BLACK;
+        }
     }
     let unit_direction = ray.direction.unit();
     let t = 0.5 * (unit_direction.y + 1.);
@@ -81,14 +82,25 @@ fn main() -> Result<(), anyhow::Error> {
 
     // Create scene
     let mut scene = Scene::new();
+
+    let lambertian1 = Lambertian {
+        attenuation: Vec3::new(0.8, 0.3, 0.3),
+    };
     scene.add(Box::new(Sphere {
         center: Vec3::new(0., 0., -1.),
         radius: 0.5,
+        material: &lambertian1,
     }));
+
+    let lambertian2 = Lambertian {
+        attenuation: Vec3::new(0.8, 0.8, 0.),
+    };
     scene.add(Box::new(Sphere {
         center: Vec3::new(0., -100.5, -1.),
         radius: 100.,
+        material: &lambertian2,
     }));
+
     let scene = scene;
     let camera = Camera::default();
 
@@ -133,7 +145,7 @@ fn render(
                     / (height as Nm);
                 let ray: Ray = camera.ray(u, v);
 
-                color_samples += color(&ray, scene);
+                color_samples += color(&ray, scene, 0);
             }
 
             {

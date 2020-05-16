@@ -1,11 +1,13 @@
+use crate::material::Material;
 use crate::ray::Ray;
 use crate::vec3::Vec3;
 use std::ops::Range;
 
-pub struct Hit {
+pub struct Hit<'a> {
     pub t: f32,
     pub p: Vec3,
     pub normal: Vec3,
+    pub material: &'a dyn Material,
 }
 
 pub trait Hitable {
@@ -16,12 +18,13 @@ pub trait Hitable {
     ) -> Option<Hit>;
 }
 
-pub struct Sphere {
+pub struct Sphere<'a> {
     pub center: Vec3,
     pub radius: f32,
+    pub material: &'a dyn Material,
 }
 
-impl Hitable for Sphere {
+impl Hitable for Sphere<'_> {
     /// Does the ray hit our sphere?
     /// If so, return the time t of the hit.
     fn hit(
@@ -48,6 +51,7 @@ impl Hitable for Sphere {
                     p,
                     normal: (p - self.center)
                         / self.radius,
+                    material: self.material,
                 });
             }
             None

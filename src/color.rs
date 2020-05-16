@@ -56,6 +56,14 @@ impl Color {
             b: self.b / a,
         }
     }
+
+    pub fn attenuate(&self, v: Vec3) -> Self {
+        Color {
+            r: self.r * v.x,
+            g: self.g * v.y,
+            b: self.b * v.z,
+        }
+    }
 }
 
 impl From<Vec3> for Color {
