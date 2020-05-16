@@ -16,7 +16,7 @@ pub trait Material {
 }
 
 pub struct Lambertian {
-    pub attenuation: Vec3,
+    pub albedo: Vec3,
 }
 
 fn random_in_unit_sphere() -> Vec3 {
@@ -42,7 +42,36 @@ impl Material for Lambertian {
 
         Some(Scatter {
             ray: Ray::new(hit.p, target - hit.p),
-            attenuation: self.attenuation,
+            attenuation: self.albedo,
+        })
+    }
+}
+
+pub struct Metal {
+    pub albedo: Vec3,
+}
+
+fn reflect(v: &Vec3, n: &Vec3) -> Vec3 {
+    *v - (*n * v.dot(n)) * 2.
+}
+
+impl Material for Metal {
+    fn scatter(
+        &self,
+        ray: &Ray,
+        hit: &Hit,
+    ) -> Option<Scatter> {
+        let reflected =
+            reflect(&ray.direction.unit(), &hit.normal);
+        let scattered = Ray::new(hit.p, reflected);
+
+        if scattered.direction.dot(&hit.normal) < 0. {
+            return None;
+        }
+
+        Some(Scatter {
+            ray: scattered,
+            attenuation: self.albedo,
         })
     }
 }

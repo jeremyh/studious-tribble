@@ -12,7 +12,7 @@ use color::Color;
 use vec3::Nm;
 
 use crate::hitable::{Hitable, Sphere};
-use crate::material::Lambertian;
+use crate::material::{Lambertian, Metal};
 use crate::ray::Ray;
 use crate::scene::Scene;
 use crate::vec3::Vec3;
@@ -84,7 +84,7 @@ fn main() -> Result<(), anyhow::Error> {
     let mut scene = Scene::new();
 
     let lambertian1 = Lambertian {
-        attenuation: Vec3::new(0.8, 0.3, 0.3),
+        albedo: Vec3::new(0.8, 0.3, 0.3),
     };
     scene.add(Box::new(Sphere {
         center: Vec3::new(0., 0., -1.),
@@ -93,12 +93,29 @@ fn main() -> Result<(), anyhow::Error> {
     }));
 
     let lambertian2 = Lambertian {
-        attenuation: Vec3::new(0.8, 0.8, 0.),
+        albedo: Vec3::new(0.8, 0.8, 0.),
     };
     scene.add(Box::new(Sphere {
         center: Vec3::new(0., -100.5, -1.),
         radius: 100.,
         material: &lambertian2,
+    }));
+
+    let metal = Metal {
+        albedo: Vec3::new(0.8, 0.6, 0.2),
+    };
+    scene.add(Box::new(Sphere {
+        center: Vec3::new(1., 0., -1.),
+        radius: 0.5,
+        material: &metal,
+    }));
+    let metal = Metal {
+        albedo: Vec3::new(0.8, 0.8, 0.8),
+    };
+    scene.add(Box::new(Sphere {
+        center: Vec3::new(-1., 0., -1.),
+        radius: 0.5,
+        material: &metal,
     }));
 
     let scene = scene;
