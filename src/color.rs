@@ -44,7 +44,8 @@ impl Color {
     pub fn web_color(&self) -> (u8, u8, u8) {
         let gamma_correct =
             |i: f32| (i.powf(1.0 / 1.8));
-        let to8 = |i: f32| (i * 255.99) as u8;
+        let to8 =
+            |i: f32| (gamma_correct(i) * 255.99) as u8;
 
         (to8(self.r), to8(self.g), to8(self.b))
     }
@@ -99,7 +100,10 @@ mod tests {
         assert_eq!(
             Color::from(Vec3::new(0.4, 1.0, 0.0))
                 .web_color(),
-            (102, 255, 0)
+            // Without Gamma correction:
+            // (102, 255, 0)
+            // With gamma:
+            (153, 255, 0)
         )
     }
 }
