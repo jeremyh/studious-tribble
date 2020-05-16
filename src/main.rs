@@ -101,21 +101,19 @@ fn main() -> Result<(), anyhow::Error> {
         material: &lambertian2,
     }));
 
-    let metal = Metal {
-        albedo: Vec3::new(0.8, 0.6, 0.2),
-    };
+    let metal =
+        Metal::new(Vec3::new(0.8, 0.6, 0.2), 1.);
     scene.add(Box::new(Sphere {
         center: Vec3::new(1., 0., -1.),
         radius: 0.5,
         material: &metal,
     }));
-    let metal = Metal {
-        albedo: Vec3::new(0.8, 0.8, 0.8),
-    };
+    let metal2 =
+        Metal::new(Vec3::new(0.8, 0.8, 0.8), 0.3);
     scene.add(Box::new(Sphere {
         center: Vec3::new(-1., 0., -1.),
         radius: 0.5,
-        material: &metal,
+        material: &metal2,
     }));
 
     let scene = scene;
