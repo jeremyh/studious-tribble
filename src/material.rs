@@ -2,17 +2,13 @@ use crate::hitable::Hit;
 use crate::ray::Ray;
 use crate::vec3::Vec3;
 
-pub struct Scatter {
-    pub ray: Ray,
-    pub attenuation: Vec3,
+pub enum Scatter {
+    Scattered { ray: Ray, attenuation: Vec3 },
+    Stopped,
 }
 
 pub trait Material {
-    fn scatter(
-        &self,
-        ray: &Ray,
-        hit: &Hit,
-    ) -> Option<Scatter>;
+    fn scatter(&self, ray: &Ray, hit: &Hit) -> Scatter;
 }
 
 pub struct Lambertian {
@@ -31,19 +27,15 @@ fn random_in_unit_sphere() -> Vec3 {
 }
 
 impl Material for Lambertian {
-    fn scatter(
-        &self,
-        ray: &Ray,
-        hit: &Hit,
-    ) -> Option<Scatter> {
+    fn scatter(&self, ray: &Ray, hit: &Hit) -> Scatter {
         let target: Vec3 = hit.p
             + hit.normal
             + random_in_unit_sphere();
 
-        Some(Scatter {
+        Scatter::Scattered {
             ray: Ray::new(hit.p, target - hit.p),
             attenuation: self.albedo,
-        })
+        }
     }
 }
 
@@ -65,12 +57,30 @@ fn reflect(v: &Vec3, n: &Vec3) -> Vec3 {
     *v - (*n * v.dot(n)) * 2.
 }
 
+fn refract(
+    v: &Vec3,
+    n: &Vec3,
+    ni_over_nt: f32,
+) -> Option<Vec3> {
+    let uv = v.unit();
+    let dt = uv.dot(n);
+    let discriminant = 1.0
+        - ni_over_nt
+            * ni_over_nt
+            * ((dt * dt * -1.) + 1.);
+
+    if discriminant > 0. {
+        Some(
+            (uv - *n * dt) * ni_over_nt
+                - *n * discriminant.sqrt(),
+        )
+    } else {
+        None
+    }
+}
+
 impl Material for Metal {
-    fn scatter(
-        &self,
-        ray: &Ray,
-        hit: &Hit,
-    ) -> Option<Scatter> {
+    fn scatter(&self, ray: &Ray, hit: &Hit) -> Scatter {
         let reflected =
             reflect(&ray.direction.unit(), &hit.normal);
 
@@ -81,12 +91,46 @@ impl Material for Metal {
         );
 
         if scattered.direction.dot(&hit.normal) < 0. {
-            return None;
+            return Scatter::Stopped;
         }
 
-        Some(Scatter {
+        Scatter::Scattered {
             ray: scattered,
             attenuation: self.albedo,
-        })
+        }
+    }
+}
+
+pub struct Dialectric {
+    pub reflective_index: f32,
+}
+
+impl Material for Dialectric {
+    fn scatter(&self, ray: &Ray, hit: &Hit) -> Scatter {
+        let reflected =
+            reflect(&ray.direction, &hit.normal);
+        let attenuation = Vec3::ONE;
+        let (outward_normal, ni_over_nt) =
+            if ray.direction.dot(&hit.normal) > 0. {
+                (-hit.normal, self.reflective_index)
+            } else {
+                (hit.normal, 1. / self.reflective_index)
+            };
+
+        if let Some(refracted) = refract(
+            &ray.direction,
+            &outward_normal,
+            ni_over_nt,
+        ) {
+            Scatter::Scattered {
+                ray: Ray::new(hit.p, refracted),
+                attenuation,
+            }
+        } else {
+            Scatter::Scattered {
+                ray: Ray::new(hit.p, reflected),
+                attenuation,
+            }
+        }
     }
 }

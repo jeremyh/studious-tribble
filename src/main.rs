@@ -12,7 +12,9 @@ use color::Color;
 use vec3::Nm;
 
 use crate::hitable::{Hitable, Sphere};
-use crate::material::{Lambertian, Metal};
+use crate::material::{
+    Dialectric, Lambertian, Metal, Scatter,
+};
 use crate::ray::Ray;
 use crate::scene::Scene;
 use crate::vec3::Vec3;
@@ -34,21 +36,18 @@ fn color(
     if let Some(hit) =
         scene.hit(&ray, &(0.001f32..f32::INFINITY))
     {
-        if depth > 50 {
-            return Color::BLACK;
-        }
-        if let Some(scatter) =
-            hit.material.scatter(ray, &hit)
+        return if depth > 50 {
+            Color::BLACK
+        } else if let Scatter::Scattered {
+            ray: scattered_ray,
+            attenuation: scattered_attenuation,
+        } = hit.material.scatter(ray, &hit)
         {
-            return color(
-                &scatter.ray,
-                scene,
-                depth + 1,
-            )
-            .attenuate(scatter.attenuation);
+            color(&scattered_ray, scene, depth + 1)
+                .attenuate(scattered_attenuation)
         } else {
-            return Color::BLACK;
-        }
+            Color::BLACK
+        };
     }
     let unit_direction = ray.direction.unit();
     let t = 0.5 * (unit_direction.y + 1.);
@@ -102,18 +101,19 @@ fn main() -> Result<(), anyhow::Error> {
     }));
 
     let metal =
-        Metal::new(Vec3::new(0.8, 0.6, 0.2), 1.);
+        Metal::new(Vec3::new(0.8, 0.6, 0.2), 0.0);
     scene.add(Box::new(Sphere {
         center: Vec3::new(1., 0., -1.),
         radius: 0.5,
         material: &metal,
     }));
-    let metal2 =
-        Metal::new(Vec3::new(0.8, 0.8, 0.8), 0.3);
+    let dialectric = Dialectric {
+        reflective_index: 1.5,
+    };
     scene.add(Box::new(Sphere {
         center: Vec3::new(-1., 0., -1.),
         radius: 0.5,
-        material: &metal2,
+        material: &dialectric,
     }));
 
     let scene = scene;
