@@ -105,32 +105,62 @@ pub struct Dialectric {
     pub reflective_index: f32,
 }
 
+pub fn schlick(
+    cosine: f32,
+    reflective_index: f32,
+) -> f32 {
+    let r0: f32 = ((1. - reflective_index)
+        / (1. + reflective_index))
+        .powi(2);
+
+    r0 + (1. - r0) * (1. - cosine).powi(5)
+}
+
 impl Material for Dialectric {
     fn scatter(&self, ray: &Ray, hit: &Hit) -> Scatter {
         let reflected =
             reflect(&ray.direction, &hit.normal);
         let attenuation = Vec3::ONE;
-        let (outward_normal, ni_over_nt) =
+
+        let (outward_normal, ni_over_nt, cosine) =
             if ray.direction.dot(&hit.normal) > 0. {
-                (-hit.normal, self.reflective_index)
+                (
+                    -hit.normal,
+                    self.reflective_index,
+                    self.reflective_index
+                        * ray
+                            .direction
+                            .dot(&hit.normal)
+                        / ray.direction.length(),
+                )
             } else {
-                (hit.normal, 1. / self.reflective_index)
+                (
+                    hit.normal,
+                    1. / self.reflective_index,
+                    -ray.direction.dot(&hit.normal)
+                        / ray.direction.length(),
+                )
             };
 
-        if let Some(refracted) = refract(
+        let direction = if let Some(refracted) = refract(
             &ray.direction,
             &outward_normal,
             ni_over_nt,
         ) {
-            Scatter::Scattered {
-                ray: Ray::new(hit.p, refracted),
-                attenuation,
+            if rand::random::<f32>()
+                < schlick(cosine, self.reflective_index)
+            {
+                reflected
+            } else {
+                refracted
             }
         } else {
-            Scatter::Scattered {
-                ray: Ray::new(hit.p, reflected),
-                attenuation,
-            }
+            reflected
+        };
+
+        Scatter::Scattered {
+            ray: Ray::new(hit.p, direction),
+            attenuation,
         }
     }
 }

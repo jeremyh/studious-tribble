@@ -83,7 +83,7 @@ fn main() -> Result<(), anyhow::Error> {
     let mut scene = Scene::new();
 
     let lambertian1 = Lambertian {
-        albedo: Vec3::new(0.8, 0.3, 0.3),
+        albedo: Vec3::new(0.1, 0.2, 0.5),
     };
     scene.add(Box::new(Sphere {
         center: Vec3::new(0., 0., -1.),
@@ -113,6 +113,11 @@ fn main() -> Result<(), anyhow::Error> {
     scene.add(Box::new(Sphere {
         center: Vec3::new(-1., 0., -1.),
         radius: 0.5,
+        material: &dialectric,
+    }));
+    scene.add(Box::new(Sphere {
+        center: Vec3::new(-1., 0., -1.),
+        radius: -0.45,
         material: &dialectric,
     }));
 
