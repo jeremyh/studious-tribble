@@ -21,7 +21,7 @@ pub trait Hitable {
 pub struct Sphere<'a> {
     pub center: Vec3,
     pub radius: f32,
-    pub material: &'a dyn Material,
+    pub material: Box<dyn Material + 'a>,
 }
 
 impl Hitable for Sphere<'_> {
@@ -51,7 +51,7 @@ impl Hitable for Sphere<'_> {
                     p,
                     normal: (p - self.center)
                         / self.radius,
-                    material: self.material,
+                    material: self.material.as_ref(),
                 });
             }
             None

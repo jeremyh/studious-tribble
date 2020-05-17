@@ -4,7 +4,10 @@
 use std::fs::File;
 use std::io::BufWriter;
 use std::io::Write as IoWrite;
-use std::path::{Path, PathBuf};
+use std::{
+    f32::consts::PI,
+    path::{Path, PathBuf},
+};
 
 use structopt::StructOpt;
 
@@ -28,6 +31,8 @@ mod ray;
 mod scene;
 mod vec3;
 
+const MAX_DEPTH: i32 = 50;
+
 fn color(
     ray: &Ray,
     scene: &dyn Hitable,
@@ -36,7 +41,7 @@ fn color(
     if let Some(hit) =
         scene.hit(&ray, &(0.001f32..f32::INFINITY))
     {
-        return if depth > 50 {
+        return if depth > MAX_DEPTH {
             Color::BLACK
         } else if let Scatter::Scattered {
             ray: scattered_ray,
@@ -76,53 +81,86 @@ struct Opt {
     samples: u16,
 }
 
-fn main() -> Result<(), anyhow::Error> {
-    let opt: Opt = Opt::from_args();
-
+fn standard_scene<'a>() -> Scene<'a> {
     // Create scene
     let mut scene = Scene::new();
 
-    let lambertian1 = Lambertian {
-        albedo: Vec3::new(0.1, 0.2, 0.5),
-    };
     scene.add(Box::new(Sphere {
         center: Vec3::new(0., 0., -1.),
         radius: 0.5,
-        material: &lambertian1,
+        material: Box::new(Lambertian {
+            albedo: Vec3::new(0.1, 0.2, 0.5),
+        }),
     }));
 
-    let lambertian2 = Lambertian {
-        albedo: Vec3::new(0.8, 0.8, 0.),
-    };
     scene.add(Box::new(Sphere {
         center: Vec3::new(0., -100.5, -1.),
         radius: 100.,
-        material: &lambertian2,
+        material: Box::new(Lambertian {
+            albedo: Vec3::new(0.8, 0.8, 0.),
+        }),
     }));
 
-    let metal =
-        Metal::new(Vec3::new(0.8, 0.6, 0.2), 0.0);
     scene.add(Box::new(Sphere {
         center: Vec3::new(1., 0., -1.),
         radius: 0.5,
-        material: &metal,
+        material: Box::new(Metal::new(
+            Vec3::new(0.8, 0.6, 0.2),
+            0.0,
+        )),
     }));
-    let dialectric = Dialectric {
-        reflective_index: 1.5,
-    };
+
     scene.add(Box::new(Sphere {
         center: Vec3::new(-1., 0., -1.),
         radius: 0.5,
-        material: &dialectric,
+        material: Box::new(Dialectric {
+            reflective_index: 1.5,
+        }),
     }));
     scene.add(Box::new(Sphere {
         center: Vec3::new(-1., 0., -1.),
         radius: -0.45,
-        material: &dialectric,
+        material: Box::new(Dialectric {
+            reflective_index: 1.5,
+        }),
     }));
 
-    let scene = scene;
-    let camera = Camera::default();
+    scene
+}
+
+fn camera_test_scene<'a>() -> Scene<'a> {
+    let r = (PI / 4.).cos();
+    let mut scene = Scene::new();
+
+    scene.add(Box::new(Sphere {
+        center: Vec3::new(-r, 0., -1.),
+        radius: r,
+        material: Box::new(Lambertian {
+            albedo: Vec3::new(0.1, 0.1, 0.3),
+        }),
+    }));
+
+    scene.add(Box::new(Sphere {
+        center: Vec3::new(r, 0., -1.),
+        radius: r,
+        material: Box::new(Lambertian {
+            albedo: Vec3::new(0.3, 0.1, 0.1),
+        }),
+    }));
+
+    scene
+}
+fn main() -> Result<(), anyhow::Error> {
+    let opt: Opt = Opt::from_args();
+
+    let scene = standard_scene();
+    let aspect =
+        (opt.width as f32) / (opt.height as f32);
+    println!(
+        "Creating {}x{} with {} samples per pixel to {:?}",
+        opt.width, opt.height, opt.samples, opt.output
+    );
+    let camera = Camera::new(90., aspect);
 
     render(
         &scene,
