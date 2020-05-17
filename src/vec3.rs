@@ -115,6 +115,14 @@ impl ops::Mul<Nm> for Vec3 {
     }
 }
 
+impl ops::Mul<Vec3> for f32 {
+    type Output = Vec3;
+
+    fn mul(self, rhs: Vec3) -> Self::Output {
+        rhs * self
+    }
+}
+
 impl ops::Div<Vec3> for Vec3 {
     type Output = Self;
     fn div(self, rhs: Vec3) -> Self::Output {

@@ -6,6 +6,9 @@ pub struct Camera {
     horizontal: Vec3,
     vertical: Vec3,
     origin: Vec3,
+
+    u_v_w: (Vec3, Vec3, Vec3),
+    lens_radius: f32,
 }
 
 impl Camera {
@@ -15,6 +18,8 @@ impl Camera {
         vup: Vec3,
         vfov: f32,
         aspect: f32,
+        aperture: f32,
+        focus_disk: f32,
     ) -> Self {
         let theta = vfov * PI / 180.0;
         let half_height = (theta / 2.).tan();
@@ -28,32 +33,45 @@ impl Camera {
 
         Camera {
             lower_left_corner: origin
-                - u * half_width
-                - v * half_height
-                - w,
-            horizontal: u * 2. * half_width,
-            vertical: v * 2. * half_height,
+                - half_width * focus_disk * u
+                - half_height * focus_disk * v
+                - focus_disk * w,
+            horizontal: 2.
+                * half_width
+                * focus_disk
+                * u,
+            vertical: 2. * half_height * focus_disk * v,
             origin,
+            u_v_w: (u, v, w),
+            lens_radius: aperture / 2.,
         }
     }
-    pub fn ray(&self, u: f32, v: f32) -> Ray {
+    pub fn ray(&self, s: f32, t: f32) -> Ray {
+        let rd =
+            self.lens_radius * random_in_unit_disk();
+        let offset =
+            self.u_v_w.0 * rd.x + self.u_v_w.1 * rd.y;
         Ray {
-            origin: self.origin,
+            origin: self.origin + offset,
             direction: (self.lower_left_corner
-                + self.horizontal * u
-                + self.vertical * v
-                - self.origin),
+                + self.horizontal * s
+                + self.vertical * t
+                - self.origin
+                - offset),
         }
     }
 }
 
-impl Default for Camera {
-    fn default() -> Self {
-        Camera {
-            lower_left_corner: Vec3::new(-2., -1., -1.),
-            horizontal: Vec3::new(4., 0., 0.),
-            vertical: Vec3::new(0., 2., 0.),
-            origin: Vec3::ZERO,
+fn random_in_unit_disk() -> Vec3 {
+    loop {
+        let rand_disc = Vec3::new(
+            rand::random(),
+            rand::random(),
+            0.,
+        );
+        let p = 2. * rand_disc - Vec3::new(1., 1., 0.);
+        if p.squared_length() < 1. {
+            return p;
         }
     }
 }

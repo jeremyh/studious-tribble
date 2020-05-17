@@ -161,12 +161,19 @@ fn main() -> Result<(), anyhow::Error> {
         "Creating {}x{} with {} samples per pixel to {:?}",
         opt.width, opt.height, opt.samples, opt.output
     );
+
+    let look_from = Vec3::new(-2., 2., 1.);
+    let look_at = Vec3::new(0., 0., -1.);
+    let dist_to_focus = (look_from - look_at).length();
+    let aperture = 0.5;
     let camera = Camera::new(
-        Vec3::new(-2., 2., 1.),
-        Vec3::new(0., 0., -1.),
+        look_from,
+        look_at,
         Vec3::new(0., 1., 0.),
-        25.,
+        30.,
         aspect,
+        aperture,
+        dist_to_focus,
     );
 
     render(
