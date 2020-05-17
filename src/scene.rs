@@ -1,5 +1,6 @@
 use crate::hitable::{Hit, Hitable};
 use crate::ray::Ray;
+use crate::vec3::F;
 use std::ops::Range;
 
 pub struct Scene<'a> {
@@ -22,10 +23,10 @@ impl Hitable for Scene<'_> {
     fn hit(
         self: &Self,
         ray: &Ray,
-        t: &Range<f32>,
+        t: &Range<F>,
     ) -> Option<Hit> {
         let mut hit = None;
-        let mut closest_so_far: f32 = t.end;
+        let mut closest_so_far: F = t.end;
 
         for thing in &self.things {
             if let Some(h) = thing

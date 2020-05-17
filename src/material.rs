@@ -1,6 +1,6 @@
 use crate::hitable::Hit;
 use crate::ray::Ray;
-use crate::vec3::Vec3;
+use crate::vec3::{Vec3, F};
 use rand::distributions::{Distribution, Standard};
 use rand::Rng;
 
@@ -43,11 +43,11 @@ impl Material for Lambertian {
 
 pub struct Metal {
     albedo: Vec3,
-    fuzz: f32,
+    fuzz: F,
 }
 
 impl Metal {
-    pub fn new(albedo: Vec3, fuzz: f32) -> Self {
+    pub fn new(albedo: Vec3, fuzz: F) -> Self {
         Self {
             albedo,
             fuzz: if fuzz > 1. { 1. } else { fuzz },
@@ -62,7 +62,7 @@ fn reflect(v: &Vec3, n: &Vec3) -> Vec3 {
 fn refract(
     v: &Vec3,
     n: &Vec3,
-    ni_over_nt: f32,
+    ni_over_nt: F,
 ) -> Option<Vec3> {
     let uv = v.unit();
     let dt = uv.dot(n);
@@ -104,14 +104,11 @@ impl Material for Metal {
 }
 
 pub struct Dialectric {
-    pub reflective_index: f32,
+    pub reflective_index: F,
 }
 
-pub fn schlick(
-    cosine: f32,
-    reflective_index: f32,
-) -> f32 {
-    let r0: f32 = ((1. - reflective_index)
+pub fn schlick(cosine: F, reflective_index: F) -> F {
+    let r0: F = ((1. - reflective_index)
         / (1. + reflective_index))
         .powi(2);
 
@@ -149,7 +146,7 @@ impl Material for Dialectric {
             &outward_normal,
             ni_over_nt,
         ) {
-            if rand::random::<f32>()
+            if rand::random::<F>()
                 < schlick(cosine, self.reflective_index)
             {
                 reflected
@@ -173,7 +170,7 @@ impl Distribution<Metal> for Standard {
         rng: &mut R,
     ) -> Metal {
         let mut r =
-            || -> f32 { 0.5 * (1. + rng.gen::<f32>()) };
+            || -> F { 0.5 * (1. + rng.gen::<F>()) };
 
         Metal {
             albedo: Vec3::new(r(), r(), r()),
@@ -187,9 +184,8 @@ impl Distribution<Lambertian> for Standard {
         &self,
         rng: &mut R,
     ) -> Lambertian {
-        let mut r = || -> f32 {
-            rng.gen::<f32>() * rng.gen::<f32>()
-        };
+        let mut r =
+            || -> F { rng.gen::<F>() * rng.gen::<F>() };
 
         Lambertian {
             albedo: Vec3::new(r(), r(), r()),

@@ -4,16 +4,13 @@
 use std::fs::File;
 use std::io::BufWriter;
 use std::io::Write as IoWrite;
-use std::{
-    f32::consts::PI,
-    path::{Path, PathBuf},
-};
+use std::path::{Path, PathBuf};
 
 use structopt::StructOpt;
 
 use camera::Camera;
 use color::Color;
-use vec3::Nm;
+use vec3::{F, PI};
 
 use crate::hitable::{Hitable, Sphere};
 use crate::material::{
@@ -39,7 +36,7 @@ fn color(
     depth: i32,
 ) -> Color {
     if let Some(hit) =
-        scene.hit(&ray, &(0.001f32..f32::INFINITY))
+        scene.hit(&ray, &((0.001 as F)..F::INFINITY))
     {
         return if depth > MAX_DEPTH {
             Color::BLACK
@@ -186,13 +183,11 @@ fn random_scene() -> Scene<'static> {
 
     for a in -11..11 {
         for b in -11..11 {
-            let choose_mat: f32 = rand::random::<f32>();
+            let choose_mat: F = rand::random::<F>();
             let center = Vec3::new(
-                (a as f32)
-                    + 0.9 * rand::random::<f32>(),
+                (a as F) + 0.9 * rand::random::<F>(),
                 0.2,
-                (b as f32)
-                    + 0.9 * rand::random::<f32>(),
+                (b as F) + 0.9 * rand::random::<F>(),
             );
 
             if (center - Vec3::new(4., 0.2, 0.))
@@ -223,8 +218,7 @@ fn main() -> Result<(), anyhow::Error> {
     let opt: Opt = Opt::from_args();
 
     let scene = random_scene();
-    let aspect =
-        (opt.width as f32) / (opt.height as f32);
+    let aspect = (opt.width as F) / (opt.height as F);
     println!(
         "Creating {}x{} with {} samples per pixel to {:?}",
         opt.width, opt.height, opt.samples, opt.output
@@ -277,12 +271,10 @@ fn render(
             let mut color_samples = Color::BLACK;
 
             for s in 0..samples {
-                let u = (i as Nm
-                    + rand::random::<f32>())
-                    / (width as Nm);
-                let v = (j as Nm
-                    + rand::random::<f32>())
-                    / (height as Nm);
+                let u = (i as F + rand::random::<F>())
+                    / (width as F);
+                let v = (j as F + rand::random::<F>())
+                    / (height as F);
                 let ray: Ray = camera.ray(u, v);
 
                 color_samples += color(&ray, scene, 0);
@@ -290,7 +282,7 @@ fn render(
 
             {
                 let (r, g, b) = color_samples
-                    .darken(samples as f32)
+                    .darken(samples as F)
                     .web_color();
 
                 writeln!(

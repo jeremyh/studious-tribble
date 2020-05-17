@@ -1,5 +1,6 @@
 use crate::{ray::Ray, vec3::Vec3};
-use std::f32::consts::PI;
+
+use crate::vec3::{F, PI};
 
 pub struct Camera {
     lower_left_corner: Vec3,
@@ -8,7 +9,7 @@ pub struct Camera {
     origin: Vec3,
 
     u_v_w: (Vec3, Vec3, Vec3),
-    lens_radius: f32,
+    lens_radius: F,
 }
 
 impl Camera {
@@ -16,10 +17,10 @@ impl Camera {
         look_from: Vec3,
         look_at: Vec3,
         vup: Vec3,
-        vfov: f32,
-        aspect: f32,
-        aperture: f32,
-        focus_disk: f32,
+        vfov: F,
+        aspect: F,
+        aperture: F,
+        focus_disk: F,
     ) -> Self {
         let theta = vfov * PI / 180.0;
         let half_height = (theta / 2.).tan();
@@ -46,7 +47,7 @@ impl Camera {
             lens_radius: aperture / 2.,
         }
     }
-    pub fn ray(&self, s: f32, t: f32) -> Ray {
+    pub fn ray(&self, s: F, t: F) -> Ray {
         let rd =
             self.lens_radius * random_in_unit_disk();
         let offset =

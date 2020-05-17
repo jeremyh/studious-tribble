@@ -1,5 +1,5 @@
-use crate::vec3::Nm;
 use crate::vec3::Vec3;
+use crate::vec3::F;
 
 pub struct Ray {
     pub origin: Vec3,
@@ -11,7 +11,7 @@ impl Ray {
         Ray { origin, direction }
     }
 
-    pub fn point_at(&self, t: Nm) -> Vec3 {
+    pub fn point_at(&self, t: F) -> Vec3 {
         self.origin + (self.direction * t)
     }
 }

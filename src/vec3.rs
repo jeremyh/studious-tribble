@@ -1,12 +1,14 @@
 use std::ops;
 
-pub type Nm = f32;
+// Should we render with f32s or f64s?
+pub type F = f32;
+pub const PI: F = std::f64::consts::PI as F;
 
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Vec3 {
-    pub x: Nm,
-    pub y: Nm,
-    pub z: Nm,
+    pub x: F,
+    pub y: F,
+    pub z: F,
 }
 
 impl Vec3 {
@@ -21,7 +23,7 @@ impl Vec3 {
         z: 1.,
     };
 
-    pub fn new(x: Nm, y: Nm, z: Nm) -> Self {
+    pub fn new(x: F, y: F, z: F) -> Self {
         Vec3 { x, y, z }
     }
 
@@ -32,15 +34,15 @@ impl Vec3 {
             rand::random(),
         )
     }
-    pub fn length(&self) -> Nm {
+    pub fn length(&self) -> F {
         self.squared_length().sqrt()
     }
 
-    pub fn squared_length(&self) -> Nm {
+    pub fn squared_length(&self) -> F {
         self.dot(self)
     }
 
-    pub fn dot(&self, b: &Self) -> Nm {
+    pub fn dot(&self, b: &Self) -> F {
         let a = self;
         a.x * b.x + a.y * b.y + a.z * b.z
     }
@@ -90,9 +92,9 @@ impl ops::Neg for Vec3 {
     }
 }
 
-impl ops::Add<Nm> for Vec3 {
+impl ops::Add<F> for Vec3 {
     type Output = Self;
-    fn add(self, rhs: Nm) -> Self::Output {
+    fn add(self, rhs: F) -> Self::Output {
         self + Vec3::from(rhs)
     }
 }
@@ -108,14 +110,14 @@ impl ops::Mul<Vec3> for Vec3 {
     }
 }
 
-impl ops::Mul<Nm> for Vec3 {
+impl ops::Mul<F> for Vec3 {
     type Output = Self;
-    fn mul(self, rhs: Nm) -> Self::Output {
+    fn mul(self, rhs: F) -> Self::Output {
         self * Vec3::from(rhs)
     }
 }
 
-impl ops::Mul<Vec3> for f32 {
+impl ops::Mul<Vec3> for F {
     type Output = Vec3;
 
     fn mul(self, rhs: Vec3) -> Self::Output {
@@ -134,9 +136,9 @@ impl ops::Div<Vec3> for Vec3 {
     }
 }
 
-impl ops::Div<Nm> for Vec3 {
+impl ops::Div<F> for Vec3 {
     type Output = Self;
-    fn div(self, rhs: Nm) -> Self::Output {
+    fn div(self, rhs: F) -> Self::Output {
         self / Vec3::from(rhs)
     }
 }
@@ -149,8 +151,8 @@ impl ops::AddAssign<Vec3> for Vec3 {
     }
 }
 
-impl From<Nm> for Vec3 {
-    fn from(n: Nm) -> Self {
+impl From<F> for Vec3 {
+    fn from(n: F) -> Self {
         Vec3::new(n, n, n)
     }
 }

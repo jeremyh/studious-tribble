@@ -1,11 +1,11 @@
-use crate::vec3::Vec3;
+use crate::vec3::{Vec3, F};
 use core::ops;
 
 #[derive(PartialEq, Debug, Copy, Clone)]
 pub struct Color {
-    pub r: f32,
-    pub g: f32,
-    pub b: f32,
+    pub r: F,
+    pub g: F,
+    pub b: F,
 }
 
 impl Color {
@@ -33,7 +33,7 @@ impl Color {
     pub fn linear(
         start: Color,
         end: Color,
-        t: f32,
+        t: F,
     ) -> Color {
         let start: Vec3 = Color::into(start);
         let end: Vec3 = Color::into(end);
@@ -42,15 +42,14 @@ impl Color {
     }
 
     pub fn web_color(&self) -> (u8, u8, u8) {
-        let gamma_correct =
-            |i: f32| (i.powf(1.0 / 1.8));
+        let gamma_correct = |i: F| (i.powf(1.0 / 1.8));
         let to8 =
-            |i: f32| (gamma_correct(i) * 255.99) as u8;
+            |i: F| (gamma_correct(i) * 255.99) as u8;
 
         (to8(self.r), to8(self.g), to8(self.b))
     }
 
-    pub fn darken(&self, a: f32) -> Self {
+    pub fn darken(&self, a: F) -> Self {
         Color {
             r: self.r / a,
             g: self.g / a,

@@ -1,10 +1,10 @@
 use crate::material::Material;
 use crate::ray::Ray;
-use crate::vec3::Vec3;
+use crate::vec3::{Vec3, F};
 use std::ops::Range;
 
 pub struct Hit<'a> {
-    pub t: f32,
+    pub t: F,
     pub p: Vec3,
     pub normal: Vec3,
     pub material: &'a dyn Material,
@@ -14,13 +14,13 @@ pub trait Hitable {
     fn hit(
         self: &Self,
         ray: &Ray,
-        t: &Range<f32>,
+        t: &Range<F>,
     ) -> Option<Hit>;
 }
 
 pub struct Sphere<'a> {
     pub center: Vec3,
-    pub radius: f32,
+    pub radius: F,
     pub material: Box<dyn Material + 'a>,
 }
 
@@ -30,7 +30,7 @@ impl Hitable for Sphere<'_> {
     fn hit(
         self: &Self,
         ray: &Ray,
-        within_t: &Range<f32>,
+        within_t: &Range<F>,
     ) -> Option<Hit> {
         let oc: Vec3 = ray.origin - self.center;
         let a = ray.direction.squared_length();
@@ -43,7 +43,7 @@ impl Hitable for Sphere<'_> {
             return None;
         }
 
-        let hit_t = |t: f32| {
+        let hit_t = |t: F| {
             if within_t.contains(&t) {
                 let p = ray.point_at(t);
                 return Some(Hit {
