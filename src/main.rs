@@ -19,6 +19,8 @@ use crate::material::{
 use crate::ray::Ray;
 use crate::scene::Scene;
 use crate::vec3::Vec3;
+use std::io;
+use std::time::Instant;
 
 mod camera;
 mod color;
@@ -266,7 +268,17 @@ fn render(
 
     // TODO: Split out a separate image writer logic
 
+    let start = Instant::now();
     for j in (0..height).rev() {
+        // Print progress percentage.
+        if j % 10 == 0 {
+            let perc = 100.
+                - ((j as f32) / (height as f32) * 100.)
+                    .floor();
+            print!("\r{:>3}% ", perc);
+            io::stdout().flush().unwrap();
+        }
+
         for i in 0..width {
             let mut color_samples = Color::BLACK;
 
@@ -293,5 +305,6 @@ fn render(
             }
         }
     }
+    println!("\rDone in {:?}", start.elapsed());
     Ok(())
 }
