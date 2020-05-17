@@ -150,6 +150,7 @@ fn camera_test_scene<'a>() -> Scene<'a> {
 
     scene
 }
+
 fn main() -> Result<(), anyhow::Error> {
     let opt: Opt = Opt::from_args();
 
@@ -160,7 +161,13 @@ fn main() -> Result<(), anyhow::Error> {
         "Creating {}x{} with {} samples per pixel to {:?}",
         opt.width, opt.height, opt.samples, opt.output
     );
-    let camera = Camera::new(90., aspect);
+    let camera = Camera::new(
+        Vec3::new(-2., 2., 1.),
+        Vec3::new(0., 0., -1.),
+        Vec3::new(0., 1., 0.),
+        25.,
+        aspect,
+    );
 
     render(
         &scene,

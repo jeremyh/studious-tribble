@@ -40,10 +40,19 @@ impl Vec3 {
         self.dot(self)
     }
 
-    pub fn dot(&self, o: &Self) -> Nm {
-        self.x * o.x + self.y * o.y + self.z * o.z
+    pub fn dot(&self, b: &Self) -> Nm {
+        let a = self;
+        a.x * b.x + a.y * b.y + a.z * b.z
     }
 
+    pub fn cross(&self, b: &Self) -> Self {
+        let a = self;
+        Self::new(
+            a.y * b.z - a.z * b.y,
+            a.z * b.x - a.x * b.z,
+            a.x * b.y - a.y * b.x,
+        )
+    }
     pub fn unit(&self) -> Self {
         let len = self.length();
 
