@@ -11,6 +11,7 @@ use std::{
 
 use structopt::StructOpt;
 
+use camera::Camera;
 use color::Color;
 use vec3::Nm;
 
@@ -21,7 +22,6 @@ use crate::material::{
 use crate::ray::Ray;
 use crate::scene::Scene;
 use crate::vec3::Vec3;
-use camera::Camera;
 
 mod camera;
 mod color;
@@ -151,10 +151,78 @@ fn camera_test_scene<'a>() -> Scene<'a> {
     scene
 }
 
+fn random_scene() -> Scene<'static> {
+    let mut scene = Scene::new();
+    scene.add(Box::new(Sphere {
+        center: Vec3::new(0., -1000., 0.),
+        radius: 1000.,
+        material: Box::new(Lambertian {
+            albedo: Vec3::new(0.5, 0.5, 0.5),
+        }),
+    }));
+
+    scene.add(Box::new(Sphere {
+        center: Vec3::new(0., 1., 0.),
+        radius: 1.,
+        material: Box::new(Dialectric {
+            reflective_index: 1.5,
+        }),
+    }));
+    scene.add(Box::new(Sphere {
+        center: Vec3::new(-4., 1., 0.),
+        radius: 1.,
+        material: Box::new(Lambertian {
+            albedo: Vec3::new(0.4, 0.2, 0.1),
+        }),
+    }));
+    scene.add(Box::new(Sphere {
+        center: Vec3::new(4., 1., 0.),
+        radius: 1.,
+        material: Box::new(Metal::new(
+            Vec3::new(0.7, 0.6, 0.5),
+            0.0,
+        )),
+    }));
+
+    for a in -11..11 {
+        for b in -11..11 {
+            let choose_mat: f32 = rand::random::<f32>();
+            let center = Vec3::new(
+                (a as f32)
+                    + 0.9 * rand::random::<f32>(),
+                0.2,
+                (b as f32)
+                    + 0.9 * rand::random::<f32>(),
+            );
+
+            if (center - Vec3::new(4., 0.2, 0.))
+                .length()
+                > 0.9
+            {
+                scene.add(Box::new(Sphere {
+                    center,
+                    radius: 0.2,
+                    material:
+
+                    if choose_mat < 0.8 {
+                        Box::new(rand::random::<Lambertian>())
+                    } else if choose_mat < 0.95 {
+                        Box::new(rand::random::<Metal>())
+                    } else { // glass
+                        Box::new(Dialectric { reflective_index: 1.5 })
+                    },
+                }));
+            }
+        }
+    }
+
+    scene
+}
+
 fn main() -> Result<(), anyhow::Error> {
     let opt: Opt = Opt::from_args();
 
-    let scene = standard_scene();
+    let scene = random_scene();
     let aspect =
         (opt.width as f32) / (opt.height as f32);
     println!(
@@ -162,15 +230,15 @@ fn main() -> Result<(), anyhow::Error> {
         opt.width, opt.height, opt.samples, opt.output
     );
 
-    let look_from = Vec3::new(-2., 2., 1.);
-    let look_at = Vec3::new(0., 0., -1.);
+    let look_from = Vec3::new(12., 6., 0.51);
+    let look_at = Vec3::new(0., 1., 0.);
     let dist_to_focus = (look_from - look_at).length();
-    let aperture = 0.5;
+    let aperture = 1.0;
     let camera = Camera::new(
         look_from,
         look_at,
         Vec3::new(0., 1., 0.),
-        30.,
+        20.,
         aspect,
         aperture,
         dist_to_focus,

@@ -1,6 +1,8 @@
 use crate::hitable::Hit;
 use crate::ray::Ray;
 use crate::vec3::Vec3;
+use rand::distributions::{Distribution, Standard};
+use rand::Rng;
 
 pub enum Scatter {
     Scattered { ray: Ray, attenuation: Vec3 },
@@ -161,6 +163,36 @@ impl Material for Dialectric {
         Scatter::Scattered {
             ray: Ray::new(hit.p, direction),
             attenuation,
+        }
+    }
+}
+
+impl Distribution<Metal> for Standard {
+    fn sample<R: Rng + ?Sized>(
+        &self,
+        rng: &mut R,
+    ) -> Metal {
+        let mut r =
+            || -> f32 { 0.5 * (1. + rng.gen::<f32>()) };
+
+        Metal {
+            albedo: Vec3::new(r(), r(), r()),
+            fuzz: r(),
+        }
+    }
+}
+
+impl Distribution<Lambertian> for Standard {
+    fn sample<R: Rng + ?Sized>(
+        &self,
+        rng: &mut R,
+    ) -> Lambertian {
+        let mut r = || -> f32 {
+            rng.gen::<f32>() * rng.gen::<f32>()
+        };
+
+        Lambertian {
+            albedo: Vec3::new(r(), r(), r()),
         }
     }
 }
