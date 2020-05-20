@@ -8,6 +8,9 @@ pub struct Color {
     pub b: F,
 }
 
+#[derive(PartialEq, Debug, Eq, Copy, Clone, Default)]
+pub struct WebColor(pub u8, pub u8, pub u8);
+
 impl Color {
     pub const WHITE: Color = Color {
         r: 1.0,
@@ -41,12 +44,12 @@ impl Color {
         Color::from(start * (1. - t) + end * t)
     }
 
-    pub fn web_color(&self) -> (u8, u8, u8) {
+    pub fn web_color(&self) -> WebColor {
         let gamma_correct = |i: F| (i.powf(1.0 / 1.8));
         let to8 =
             |i: F| (gamma_correct(i) * 255.99) as u8;
 
-        (to8(self.r), to8(self.g), to8(self.b))
+        WebColor(to8(self.r), to8(self.g), to8(self.b))
     }
 
     pub fn darken(&self, a: F) -> Self {
@@ -102,7 +105,7 @@ mod tests {
             // Without Gamma correction:
             // (102, 255, 0)
             // With gamma:
-            (153, 255, 0)
+            WebColor(153, 255, 0)
         )
     }
 }

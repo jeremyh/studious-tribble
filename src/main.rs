@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 use structopt::StructOpt;
 
 use camera::Camera;
-use color::Color;
+use color::{Color, WebColor};
 use vec3::{F, PI};
 
 use crate::hitable::{Hitable, Sphere};
@@ -18,8 +18,10 @@ use crate::material::{
 };
 use crate::ray::Ray;
 use crate::scene::Scene;
+use crate::time::{
+    format_rough_duration, print_progress,
+};
 use crate::vec3::Vec3;
-use std::io;
 use std::time::Instant;
 
 mod camera;
@@ -28,6 +30,7 @@ mod hitable;
 mod material;
 mod ray;
 mod scene;
+mod time;
 mod vec3;
 
 const MAX_DEPTH: i32 = 50;
@@ -229,7 +232,7 @@ fn main() -> Result<(), anyhow::Error> {
     let look_from = Vec3::new(12., 6., 0.51);
     let look_at = Vec3::new(0., 1., 0.);
     let dist_to_focus = (look_from - look_at).length();
-    let aperture = 1.0;
+    let aperture = 0.6;
     let camera = Camera::new(
         look_from,
         look_at,
@@ -258,25 +261,19 @@ fn render(
     path: &Path,
     samples: u16,
 ) -> Result<(), anyhow::Error> {
-    let mut o = BufWriter::new(File::create(path)?);
-    writeln!(
-        &mut o,
-        "P3\n{nx} {ny}\n255",
-        nx = width,
-        ny = height
-    )?;
-
     // TODO: Split out a separate image writer logic
 
+    let mut image: Vec<WebColor> =
+        Vec::with_capacity((height * width) as usize);
     let start = Instant::now();
+
     for j in (0..height).rev() {
         // Print progress percentage.
-        if j % 10 == 0 {
-            let perc = 100.
-                - ((j as f32) / (height as f32) * 100.)
-                    .floor();
-            print!("\r{:>3}% ", perc);
-            io::stdout().flush().unwrap();
+        if j % (height / 100) == 0 {
+            let fraction_remaining =
+                (j as f32) / (height as f32);
+
+            print_progress(start, fraction_remaining);
         }
 
         for i in 0..width {
@@ -293,18 +290,29 @@ fn render(
             }
 
             {
-                let (r, g, b) = color_samples
-                    .darken(samples as F)
-                    .web_color();
-
-                writeln!(
-                    &mut o,
-                    "{:?} {:?} {:?}",
-                    r, g, b,
-                )?;
+                image.push(
+                    color_samples
+                        .darken(samples as F)
+                        .web_color(),
+                );
             }
         }
     }
-    println!("\rDone in {:?}", start.elapsed());
+
+    let mut o = BufWriter::new(File::create(path)?);
+    writeln!(
+        &mut o,
+        "P3\n{nx} {ny}\n255",
+        nx = width,
+        ny = height
+    )?;
+    for WebColor(r, g, b) in image {
+        writeln!(&mut o, "{:?} {:?} {:?}", r, g, b,)?;
+    }
+
+    println!(
+        "\rRendered in {:<30}",
+        format_rough_duration(start.elapsed())
+    );
     Ok(())
 }
