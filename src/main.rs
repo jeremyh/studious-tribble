@@ -35,7 +35,7 @@ mod vec3;
 
 const MAX_DEPTH: i32 = 50;
 
-fn color(
+fn ray_color(
     ray: &Ray,
     scene: &dyn Hitable,
     depth: i32,
@@ -50,7 +50,7 @@ fn color(
             attenuation: scattered_attenuation,
         } = hit.material.scatter(ray, &hit)
         {
-            color(&scattered_ray, scene, depth + 1)
+            ray_color(&scattered_ray, scene, depth + 1)
                 .attenuate(scattered_attenuation)
         } else {
             Color::BLACK
@@ -69,9 +69,9 @@ fn color(
 )]
 struct Opt {
     #[structopt(short, long, default_value = "400")]
-    width: i32,
+    width: usize,
     #[structopt(short, long, default_value = "200")]
-    height: i32,
+    height: usize,
 
     #[structopt(
         parse(from_os_str),
@@ -256,15 +256,16 @@ fn main() -> Result<(), anyhow::Error> {
 fn render(
     scene: &Scene,
     camera: &Camera,
-    width: i32,
-    height: i32,
+    width: usize,
+    height: usize,
     path: &Path,
     samples: u16,
 ) -> Result<(), anyhow::Error> {
     // TODO: Split out a separate image writer logic
 
-    let mut image: Vec<WebColor> =
-        Vec::with_capacity((height * width) as usize);
+    let mut image =
+        vec![vec![WebColor::default(); width]; height];
+
     let start = Instant::now();
 
     let rays_to_trace = (width as u64)
@@ -272,15 +273,15 @@ fn render(
         * (samples as u64);
     eprintln!("{} rays   ", rays_to_trace);
 
-    for j in (0..height).rev() {
-        // Print progress percentage.
-        if j % (height / 100) == 0 {
+    for (j, row) in image.iter_mut().enumerate() {
+        // Print progress percentage (from second row onwards).
+        if j % (height / 100) == 1 {
             let fraction_remaining =
                 (j as f32) / (height as f32);
             print_progress(start, fraction_remaining);
         }
 
-        for i in 0..width {
+        for (i, color) in row.iter_mut().enumerate() {
             let mut color_samples = Color::BLACK;
 
             for s in 0..samples {
@@ -290,16 +291,13 @@ fn render(
                     / (height as F);
                 let ray: Ray = camera.ray(u, v);
 
-                color_samples += color(&ray, scene, 0);
+                color_samples +=
+                    ray_color(&ray, scene, 0);
             }
 
-            {
-                image.push(
-                    color_samples
-                        .darken(samples as F)
-                        .web_color(),
-                );
-            }
+            *color = color_samples
+                .darken(samples as F)
+                .web_color();
         }
     }
 
@@ -310,8 +308,15 @@ fn render(
         nx = width,
         ny = height
     )?;
-    for WebColor(r, g, b) in image {
-        writeln!(&mut o, "{:?} {:?} {:?}", r, g, b,)?;
+
+    for row in image.iter().rev() {
+        for WebColor(r, g, b) in row.iter() {
+            writeln!(
+                &mut o,
+                "{:?} {:?} {:?}",
+                r, g, b,
+            )?;
+        }
     }
 
     eprintln!(

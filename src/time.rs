@@ -5,30 +5,25 @@ use std::time::{Duration, Instant};
 
 pub fn print_progress(
     start: Instant,
-    fraction_remaining: f32,
+    fraction_complete: f32,
 ) {
-    let percent_complete =
-        100. - (fraction_remaining * 100.);
     print!(
         "\r{:>3}% {:>20} elapsed. eta: {:<20}",
-        percent_complete.floor(),
+        (fraction_complete * 100.).floor(),
         format_rough_duration(start.elapsed()),
-        format_remaining_secs(
-            start,
-            fraction_remaining
-        )
+        format_remaining_secs(start, fraction_complete)
     );
     io::stdout().flush().unwrap();
 }
 
 fn format_remaining_secs(
     start: Instant,
-    fraction_remaining: f32,
+    fraction_complete: f32,
 ) -> String {
     let remaining_secs = (start.elapsed().as_secs()
         as f32
-        / (1. - fraction_remaining))
-        * fraction_remaining;
+        / (fraction_complete))
+        * (1. - fraction_complete);
     format_seconds(remaining_secs as u64)
 }
 
