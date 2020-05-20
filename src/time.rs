@@ -8,7 +8,7 @@ pub fn print_progress(
     fraction_complete: f32,
 ) {
     print!(
-        "\r{:>3}% {:>20} elapsed. eta: {:<20}",
+        "\r{:>3}% {:>20} elapsed. eta {}.      ",
         (fraction_complete * 100.).floor(),
         format_rough_duration(start.elapsed()),
         format_remaining_secs(start, fraction_complete)

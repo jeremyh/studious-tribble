@@ -275,7 +275,7 @@ fn render(
 
     for (j, row) in image.iter_mut().enumerate() {
         // Print progress percentage (from second row onwards).
-        if j % (height / 100) == 1 {
+        if (j % (height / 100) == 0) && (j > 0) {
             let fraction_remaining =
                 (j as f32) / (height as f32);
             print_progress(start, fraction_remaining);
