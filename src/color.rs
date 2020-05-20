@@ -1,5 +1,6 @@
 use crate::vec3::{Vec3, F};
 use core::ops;
+use std::iter;
 
 #[derive(PartialEq, Debug, Copy, Clone)]
 pub struct Color {
@@ -85,11 +86,29 @@ impl Into<Vec3> for Color {
     }
 }
 
+impl ops::Add for Color {
+    type Output = Color;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Color {
+            r: self.r + rhs.r,
+            g: self.g + rhs.g,
+            b: self.b + rhs.b,
+        }
+    }
+}
+
 impl ops::AddAssign<Color> for Color {
     fn add_assign(&mut self, rhs: Color) {
         self.r += rhs.r;
         self.g += rhs.g;
         self.b += rhs.b;
+    }
+}
+
+impl iter::Sum for Color {
+    fn sum<I: Iterator<Item = Color>>(iter: I) -> Self {
+        iter.fold(Color::BLACK, |a, b| a + b)
     }
 }
 

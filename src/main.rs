@@ -5,6 +5,9 @@ use std::fs::File;
 use std::io::BufWriter;
 use std::io::Write as IoWrite;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
+use std::thread;
+use std::time::Instant;
 
 use structopt::StructOpt;
 
@@ -18,11 +21,8 @@ use crate::material::{
 };
 use crate::ray::Ray;
 use crate::scene::Scene;
-use crate::time::{
-    format_rough_duration, print_progress,
-};
+use crate::time::format_rough_duration;
 use crate::vec3::Vec3;
-use std::time::Instant;
 
 mod camera;
 mod color;
@@ -81,9 +81,12 @@ struct Opt {
 
     #[structopt(long, default_value = "16")]
     samples: u16,
+
+    #[structopt(long, default_value = "3")]
+    threads: usize,
 }
 
-fn standard_scene<'a>() -> Scene<'a> {
+fn standard_scene() -> Scene {
     // Create scene
     let mut scene = Scene::new();
 
@@ -130,7 +133,7 @@ fn standard_scene<'a>() -> Scene<'a> {
     scene
 }
 
-fn camera_test_scene<'a>() -> Scene<'a> {
+fn camera_test_scene() -> Scene {
     let r = (PI / 4.).cos();
     let mut scene = Scene::new();
 
@@ -153,7 +156,7 @@ fn camera_test_scene<'a>() -> Scene<'a> {
     scene
 }
 
-fn random_scene() -> Scene<'static> {
+fn random_scene() -> Scene {
     let mut scene = Scene::new();
     scene.add(Box::new(Sphere {
         center: Vec3::new(0., -1000., 0.),
@@ -244,27 +247,26 @@ fn main() -> Result<(), anyhow::Error> {
     );
 
     render(
-        &scene,
-        &camera,
+        scene,
+        camera,
         opt.width,
         opt.height,
         opt.output.as_path(),
         opt.samples,
+        opt.threads,
     )
 }
 
 fn render(
-    scene: &Scene,
-    camera: &Camera,
+    scene: Scene,
+    camera: Camera,
     width: usize,
     height: usize,
     path: &Path,
     samples: u16,
+    threads: usize,
 ) -> Result<(), anyhow::Error> {
     // TODO: Split out a separate image writer logic
-
-    let mut image =
-        vec![vec![WebColor::default(); width]; height];
 
     let start = Instant::now();
 
@@ -273,30 +275,41 @@ fn render(
         * (samples as u64);
     eprintln!("{} rays   ", rays_to_trace);
 
+    let mut children = Vec::with_capacity(threads);
+    let samples_per_thread = samples / (threads as u16);
+
+    let camera: Arc<Camera> = Arc::new(camera);
+    let scene: Arc<Scene> = Arc::new(scene);
+
+    for i in 0..threads {
+        let scene = scene.clone();
+        let camera = camera.clone();
+        children.push(thread::spawn(move || {
+            render_image(
+                scene,
+                camera,
+                width,
+                height,
+                samples_per_thread,
+            )
+        }));
+    }
+
+    let mut images = Vec::with_capacity(threads);
+    for child in children {
+        images.push(child.join().unwrap());
+    }
+
+    let mut image =
+        vec![vec![WebColor::default(); width]; height];
     for (j, row) in image.iter_mut().enumerate() {
-        // Print progress percentage (from second row onwards).
-        if (j % (height / 100) == 0) && (j > 0) {
-            let fraction_remaining =
-                (j as f32) / (height as f32);
-            print_progress(start, fraction_remaining);
-        }
+        for (i, out_color) in row.iter_mut().enumerate()
+        {
+            let c: Color =
+                images.iter().map(|c| c[j][i]).sum();
 
-        for (i, color) in row.iter_mut().enumerate() {
-            let mut color_samples = Color::BLACK;
-
-            for s in 0..samples {
-                let u = (i as F + rand::random::<F>())
-                    / (width as F);
-                let v = (j as F + rand::random::<F>())
-                    / (height as F);
-                let ray: Ray = camera.ray(u, v);
-
-                color_samples +=
-                    ray_color(&ray, scene, 0);
-            }
-
-            *color = color_samples
-                .darken(samples as F)
+            *out_color = c
+                .darken(images.len() as f32)
                 .web_color();
         }
     }
@@ -329,4 +342,34 @@ fn render(
             / start.elapsed().as_millis(),
     );
     Ok(())
+}
+
+fn render_image(
+    scene: Arc<Scene>,
+    camera: Arc<Camera>,
+    width: usize,
+    height: usize,
+    samples: u16,
+) -> Vec<Vec<Color>> {
+    let mut image =
+        vec![vec![Color::BLACK; width]; height];
+    for (j, row) in image.iter_mut().enumerate() {
+        for (i, color) in row.iter_mut().enumerate() {
+            let mut color_samples = Color::BLACK;
+
+            for s in 0..samples {
+                let u = (i as F + rand::random::<F>())
+                    / (width as F);
+                let v = (j as F + rand::random::<F>())
+                    / (height as F);
+                let ray: Ray = camera.ray(u, v);
+
+                color_samples +=
+                    ray_color(&ray, scene.as_ref(), 0);
+            }
+
+            *color = color_samples.darken(samples as F);
+        }
+    }
+    image
 }

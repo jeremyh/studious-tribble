@@ -7,7 +7,7 @@ pub struct Hit<'a> {
     pub t: F,
     pub p: Vec3,
     pub normal: Vec3,
-    pub material: &'a dyn Material,
+    pub material: &'a (dyn Material + Send + Sync),
 }
 
 pub trait Hitable {
@@ -21,7 +21,7 @@ pub trait Hitable {
 pub struct Sphere<'a> {
     pub center: Vec3,
     pub radius: F,
-    pub material: Box<dyn Material + 'a>,
+    pub material: Box<dyn Material + Send + Sync + 'a>,
 }
 
 impl Hitable for Sphere<'_> {
