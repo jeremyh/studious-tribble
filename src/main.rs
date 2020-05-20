@@ -224,7 +224,7 @@ fn main() -> Result<(), anyhow::Error> {
 
     let scene = random_scene();
     let aspect = (opt.width as F) / (opt.height as F);
-    println!(
+    eprintln!(
         "Creating {}x{} with {} samples per pixel to {:?}",
         opt.width, opt.height, opt.samples, opt.output
     );
@@ -267,12 +267,16 @@ fn render(
         Vec::with_capacity((height * width) as usize);
     let start = Instant::now();
 
+    let rays_to_trace = (width as u64)
+        * (height as u64)
+        * (samples as u64);
+    eprintln!("{} rays   ", rays_to_trace);
+
     for j in (0..height).rev() {
         // Print progress percentage.
         if j % (height / 100) == 0 {
             let fraction_remaining =
                 (j as f32) / (height as f32);
-
             print_progress(start, fraction_remaining);
         }
 
@@ -310,9 +314,14 @@ fn render(
         writeln!(&mut o, "{:?} {:?} {:?}", r, g, b,)?;
     }
 
-    println!(
+    eprintln!(
         "\rRendered in {:<30}",
-        format_rough_duration(start.elapsed())
+        format_rough_duration(start.elapsed()),
+    );
+    eprintln!(
+        "{} rays/millisecond",
+        (rays_to_trace as u128)
+            / start.elapsed().as_millis(),
     );
     Ok(())
 }
