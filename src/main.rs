@@ -177,12 +177,30 @@ fn render(
         }
     }
 
+    write_image(path, &mut image)?;
+
+    eprintln!(
+        "\rRendered in {:<30}",
+        format_rough_duration(start.elapsed()),
+    );
+    eprintln!(
+        "{} rays/millisecond",
+        (rays_to_trace as u128)
+            / start.elapsed().as_millis(),
+    );
+    Ok(())
+}
+
+fn write_image(
+    path: &Path,
+    image: &mut Vec<Vec<WebColor>>,
+) -> Result<(), anyhow::Error> {
     let mut o = BufWriter::new(File::create(path)?);
     writeln!(
         &mut o,
         "P3\n{nx} {ny}\n255",
-        nx = width,
-        ny = height
+        nx = image[0].len(),
+        ny = image.len()
     )?;
 
     for row in image.iter().rev() {
@@ -195,15 +213,6 @@ fn render(
         }
     }
 
-    eprintln!(
-        "\rRendered in {:<30}",
-        format_rough_duration(start.elapsed()),
-    );
-    eprintln!(
-        "{} rays/millisecond",
-        (rays_to_trace as u128)
-            / start.elapsed().as_millis(),
-    );
     Ok(())
 }
 
