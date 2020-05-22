@@ -1,9 +1,8 @@
 #![allow(dead_code)]
 #![allow(unused_variables)]
 
-use std::fs::File;
-use std::io::BufWriter;
-use std::io::Write as IoWrite;
+use color::Color;
+
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::thread;
@@ -12,7 +11,7 @@ use std::time::Instant;
 use structopt::StructOpt;
 
 use camera::Camera;
-use color::{Color, WebColor};
+
 use vec3::F;
 
 use crate::hitable::Hitable;
@@ -21,10 +20,12 @@ use crate::ray::Ray;
 use crate::scene::Scene;
 use crate::time::format_rough_duration;
 use crate::vec3::Vec3;
+use image::Image;
 
 mod camera;
 mod color;
 mod hitable;
+mod image;
 mod material;
 mod ray;
 mod scene;
@@ -158,26 +159,13 @@ fn render(
         }));
     }
 
-    let mut images = Vec::with_capacity(threads);
+    let mut images: Vec<Image> =
+        Vec::with_capacity(children.len());
     for child in children {
-        images.push(child.join().unwrap());
+        images.push(child.join().unwrap().into());
     }
 
-    let mut image =
-        vec![vec![WebColor::default(); width]; height];
-    for (j, row) in image.iter_mut().enumerate() {
-        for (i, out_color) in row.iter_mut().enumerate()
-        {
-            let c: Color =
-                images.iter().map(|c| c[j][i]).sum();
-
-            *out_color = c
-                .darken(images.len() as f32)
-                .web_color();
-        }
-    }
-
-    write_image(path, &mut image)?;
+    Image::average(&mut images).write(path)?;
 
     eprintln!(
         "\rRendered in {:<30}",
@@ -188,31 +176,6 @@ fn render(
         (rays_to_trace as u128)
             / start.elapsed().as_millis(),
     );
-    Ok(())
-}
-
-fn write_image(
-    path: &Path,
-    image: &mut Vec<Vec<WebColor>>,
-) -> Result<(), anyhow::Error> {
-    let mut o = BufWriter::new(File::create(path)?);
-    writeln!(
-        &mut o,
-        "P3\n{nx} {ny}\n255",
-        nx = image[0].len(),
-        ny = image.len()
-    )?;
-
-    for row in image.iter().rev() {
-        for WebColor(r, g, b) in row.iter() {
-            writeln!(
-                &mut o,
-                "{:?} {:?} {:?}",
-                r, g, b,
-            )?;
-        }
-    }
-
     Ok(())
 }
 
