@@ -44,7 +44,7 @@ fn ray_color(
         scene.hit(&ray, &((0.001 as F)..F::INFINITY))
     {
         return if depth > MAX_DEPTH {
-            Color::BLACK
+            Color::black()
         } else if let Scatter::Scattered {
             ray: scattered_ray,
             attenuation: scattered_attenuation,
@@ -53,13 +53,13 @@ fn ray_color(
             ray_color(&scattered_ray, scene, depth + 1)
                 .attenuate(scattered_attenuation)
         } else {
-            Color::BLACK
+            Color::black()
         };
     }
     let unit_direction = ray.direction.unit();
     let t = 0.5 * (unit_direction.y + 1.);
 
-    Color::linear(Color::WHITE, Color::SKY_BLUE, t)
+    Color::linear(Color::white(), Color::sky_blue(), t)
 }
 
 #[derive(Debug, StructOpt)]
@@ -92,8 +92,8 @@ fn main() -> Result<(), anyhow::Error> {
     let scene = scenes::random_scene();
     let aspect = (opt.width as F) / (opt.height as F);
     eprintln!(
-        "Creating {}x{} with {} samples per pixel to {:?}",
-        opt.width, opt.height, opt.samples, opt.output
+        "Creating {}x{} with {} samples and {} threads to {:?}",
+        opt.width, opt.height, opt.samples, opt.threads, opt.output
     );
 
     let look_from = Vec3::new(12., 6., 0.51);
@@ -130,8 +130,6 @@ fn render(
     samples: u16,
     threads: usize,
 ) -> Result<(), anyhow::Error> {
-    // TODO: Split out a separate image writer logic
-
     let start = Instant::now();
 
     let rays_to_trace = (width as u64)
@@ -187,17 +185,18 @@ fn render_image(
     samples: u16,
 ) -> Vec<Vec<Color>> {
     let mut image =
-        vec![vec![Color::BLACK; width]; height];
+        vec![vec![Color::black(); width]; height];
     for (j, row) in image.iter_mut().enumerate() {
         for (i, color) in row.iter_mut().enumerate() {
-            let mut color_samples = Color::BLACK;
+            let mut color_samples = Color::black();
 
             for s in 0..samples {
-                let u = (i as F + rand::random::<F>())
-                    / (width as F);
-                let v = (j as F + rand::random::<F>())
-                    / (height as F);
-                let ray: Ray = camera.ray(u, v);
+                let ray: Ray = camera.ray(
+                    (i as F + rand::random::<F>())
+                        / (width as F),
+                    (j as F + rand::random::<F>())
+                        / (height as F),
+                );
 
                 color_samples +=
                     ray_color(&ray, scene.as_ref(), 0);

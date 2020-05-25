@@ -13,7 +13,7 @@ impl Image {
     pub fn new(width: usize, height: usize) -> Self {
         Self {
             image: vec![
-                vec![Color::BLACK; width];
+                vec![Color::black(); width];
                 height
             ],
         }

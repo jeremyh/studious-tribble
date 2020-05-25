@@ -4,35 +4,31 @@ use std::iter;
 
 #[derive(PartialEq, Debug, Copy, Clone)]
 pub struct Color {
-    pub r: F,
-    pub g: F,
-    pub b: F,
+    v: Vec3,
 }
 
 #[derive(PartialEq, Debug, Eq, Copy, Clone, Default)]
 pub struct WebColor(pub u8, pub u8, pub u8);
 
 impl Color {
-    pub const WHITE: Color = Color {
-        r: 1.0,
-        g: 1.0,
-        b: 1.0,
-    };
-    pub const BLACK: Color = Color {
-        r: 0.0,
-        g: 0.0,
-        b: 0.0,
-    };
-    pub const SKY_BLUE: Color = Color {
-        r: 0.5,
-        g: 0.75,
-        b: 1.0,
-    };
-    pub const RED: Color = Color {
-        r: 1.0,
-        g: 0.,
-        b: 0.,
-    };
+    pub fn new(r: F, g: F, b: F) -> Color {
+        Self {
+            v: Vec3::new(r, g, b),
+        }
+    }
+
+    pub fn white() -> Color {
+        Color::new(1., 1., 1.)
+    }
+    pub fn black() -> Color {
+        Color::new(0., 0., 0.)
+    }
+    pub fn sky_blue() -> Color {
+        Color::new(0.5, 0.75, 1.)
+    }
+    pub fn red() -> Color {
+        Color::new(1., 0., 0.)
+    }
 
     pub fn linear(
         start: Color,
@@ -50,39 +46,31 @@ impl Color {
         let to8 =
             |i: F| (gamma_correct(i) * 255.99) as u8;
 
-        WebColor(to8(self.r), to8(self.g), to8(self.b))
+        WebColor(
+            to8(self.v.x),
+            to8(self.v.y),
+            to8(self.v.z),
+        )
     }
 
     pub fn darken(&self, a: F) -> Self {
-        Color {
-            r: self.r / a,
-            g: self.g / a,
-            b: self.b / a,
-        }
+        Color { v: self.v / a }
     }
 
     pub fn attenuate(&self, v: Vec3) -> Self {
-        Color {
-            r: self.r * v.x,
-            g: self.g * v.y,
-            b: self.b * v.z,
-        }
+        Color { v: self.v * v }
     }
 }
 
 impl From<Vec3> for Color {
     fn from(v: Vec3) -> Self {
-        Color {
-            r: v.x,
-            g: v.y,
-            b: v.z,
-        }
+        Color { v }
     }
 }
 
 impl Into<Vec3> for Color {
     fn into(self) -> Vec3 {
-        Vec3::new(self.r, self.g, self.b)
+        self.v
     }
 }
 
@@ -90,25 +78,19 @@ impl ops::Add for Color {
     type Output = Color;
 
     fn add(self, rhs: Self) -> Self::Output {
-        Color {
-            r: self.r + rhs.r,
-            g: self.g + rhs.g,
-            b: self.b + rhs.b,
-        }
+        Color { v: self.v + rhs.v }
     }
 }
 
 impl ops::AddAssign<Color> for Color {
     fn add_assign(&mut self, rhs: Color) {
-        self.r += rhs.r;
-        self.g += rhs.g;
-        self.b += rhs.b;
+        self.v += rhs.v
     }
 }
 
 impl iter::Sum for Color {
     fn sum<I: Iterator<Item = Color>>(iter: I) -> Self {
-        iter.fold(Color::BLACK, |a, b| a + b)
+        iter.fold(Color::black(), |a, b| a + b)
     }
 }
 
