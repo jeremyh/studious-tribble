@@ -1,17 +1,19 @@
 #![allow(dead_code)]
 #![allow(unused_variables)]
 
-use color::Color;
-
+use std::ops::Rem;
 use std::path::{Path, PathBuf};
+use std::sync::mpsc;
+use std::sync::mpsc::{Receiver, Sender};
 use std::sync::Arc;
 use std::thread;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use structopt::StructOpt;
 
 use camera::Camera;
-
+use color::Color;
+use image::Image;
 use vec3::F;
 
 use crate::hitable::Hitable;
@@ -20,7 +22,6 @@ use crate::ray::Ray;
 use crate::scene::Scene;
 use crate::time::format_rough_duration;
 use crate::vec3::Vec3;
-use image::Image;
 
 mod camera;
 mod color;
@@ -121,6 +122,12 @@ fn main() -> Result<(), anyhow::Error> {
     )
 }
 
+/// Percentage this thread has completed so far.
+struct ProcStatus {
+    thread_id: usize,
+    fraction_complete: f32,
+}
+
 fn render(
     scene: Scene,
     camera: Camera,
@@ -128,7 +135,7 @@ fn render(
     height: usize,
     path: &Path,
     samples: u16,
-    threads: usize,
+    thread_count: usize,
 ) -> Result<(), anyhow::Error> {
     let start = Instant::now();
 
@@ -137,15 +144,19 @@ fn render(
         * (samples as u64);
     eprintln!("{} rays   ", rays_to_trace);
 
-    let mut children = Vec::with_capacity(threads);
-    let samples_per_thread = samples / (threads as u16);
+    let mut children = Vec::with_capacity(thread_count);
+    let samples_per_thread =
+        samples / (thread_count as u16);
 
     let camera: Arc<Camera> = Arc::new(camera);
     let scene: Arc<Scene> = Arc::new(scene);
 
-    for i in 0..threads {
+    let (tx, rx) = mpsc::channel::<ProcStatus>();
+
+    for thread_id in 0..thread_count {
         let scene = scene.clone();
         let camera = camera.clone();
+        let status_transmitter = tx.clone();
         children.push(thread::spawn(move || {
             render_image(
                 scene,
@@ -153,9 +164,13 @@ fn render(
                 width,
                 height,
                 samples_per_thread,
+                thread_id,
+                status_transmitter,
             )
         }));
     }
+
+    report_thread_progress(thread_count, rx);
 
     let mut images: Vec<Image> =
         Vec::with_capacity(children.len());
@@ -177,16 +192,66 @@ fn render(
     Ok(())
 }
 
+fn report_thread_progress(
+    threads: usize,
+    rx: Receiver<ProcStatus>,
+) {
+    println!("Workers:");
+    let mut statuses = vec![0.; threads];
+    loop {
+        // Drain the waiting thread statuses.
+        for ProcStatus {
+            thread_id: thread,
+            fraction_complete,
+        } in rx.try_iter()
+        {
+            statuses[thread] = fraction_complete;
+        }
+
+        // Print statuses. If all are completed, we can exit.
+        let mut are_finished = true;
+        for (i, f) in statuses.iter().enumerate() {
+            println!("\t{}: {:02.0}%", i, *f * 100.);
+            if *f < 1. {
+                are_finished = false;
+            }
+        }
+
+        if are_finished {
+            break;
+        }
+        // Move cursor up for rerender
+        print!("\x1b[{}A", threads);
+        // Delay before rerender
+        thread::sleep(Duration::from_millis(300));
+    }
+}
+
 fn render_image(
     scene: Arc<Scene>,
     camera: Arc<Camera>,
     width: usize,
     height: usize,
     samples: u16,
+    thread_id: usize,
+    status_transmitter: Sender<ProcStatus>,
 ) -> Vec<Vec<Color>> {
     let mut image =
         vec![vec![Color::black(); width]; height];
+
+    // Send status every x rows.
+    let every_x = height / 200 + 1;
+
     for (j, row) in image.iter_mut().enumerate() {
+        if (j.rem(every_x)) == 0 {
+            status_transmitter
+                .send(ProcStatus {
+                    thread_id: thread_id,
+                    fraction_complete: (j as f32)
+                        / (height as f32),
+                })
+                .unwrap();
+        }
         for (i, color) in row.iter_mut().enumerate() {
             let mut color_samples = Color::black();
 
@@ -205,5 +270,14 @@ fn render_image(
             *color = color_samples.darken(samples as F);
         }
     }
+
+    // We're done!
+    status_transmitter
+        .send(ProcStatus {
+            thread_id: thread_id,
+            fraction_complete: 1.0,
+        })
+        .unwrap();
+
     image
 }
