@@ -4,7 +4,7 @@
 use std::ops::Rem;
 use std::path::{Path, PathBuf};
 use std::sync::mpsc;
-use std::sync::mpsc::{Receiver, Sender};
+use std::sync::mpsc::Receiver;
 use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant};
@@ -156,7 +156,7 @@ fn render(
     for thread_id in 0..thread_count {
         let scene = scene.clone();
         let camera = camera.clone();
-        let status_transmitter = tx.clone();
+        let tx = tx.clone();
         children.push(thread::spawn(move || {
             render_image(
                 scene,
@@ -164,13 +164,18 @@ fn render(
                 width,
                 height,
                 samples_per_thread,
-                thread_id,
-                status_transmitter,
+                |fraction_complete| {
+                    tx.send(ProcStatus {
+                        thread_id,
+                        fraction_complete,
+                    })
+                    .unwrap()
+                },
             )
         }));
     }
 
-    report_thread_progress(thread_count, rx);
+    track_thread_progress(thread_count, rx);
 
     let mut images: Vec<Image> =
         Vec::with_capacity(children.len());
@@ -192,20 +197,20 @@ fn render(
     Ok(())
 }
 
-fn report_thread_progress(
+fn track_thread_progress(
     threads: usize,
     rx: Receiver<ProcStatus>,
 ) {
     println!("Workers:");
     let mut statuses = vec![0.; threads];
     loop {
-        // Drain the waiting thread statuses.
+        // Drain any waiting thread statuses.
         for ProcStatus {
-            thread_id: thread,
+            thread_id,
             fraction_complete,
         } in rx.try_iter()
         {
-            statuses[thread] = fraction_complete;
+            statuses[thread_id] = fraction_complete;
         }
 
         // Print statuses. If all are completed, we can exit.
@@ -227,15 +232,17 @@ fn report_thread_progress(
     }
 }
 
-fn render_image(
+fn render_image<St>(
     scene: Arc<Scene>,
     camera: Arc<Camera>,
     width: usize,
     height: usize,
     samples: u16,
-    thread_id: usize,
-    status_transmitter: Sender<ProcStatus>,
-) -> Vec<Vec<Color>> {
+    send_fraction_complete_status: St,
+) -> Vec<Vec<Color>>
+where
+    St: Fn(f32),
+{
     let mut image =
         vec![vec![Color::black(); width]; height];
 
@@ -244,13 +251,9 @@ fn render_image(
 
     for (j, row) in image.iter_mut().enumerate() {
         if (j.rem(every_x)) == 0 {
-            status_transmitter
-                .send(ProcStatus {
-                    thread_id: thread_id,
-                    fraction_complete: (j as f32)
-                        / (height as f32),
-                })
-                .unwrap();
+            send_fraction_complete_status(
+                (j as f32) / (height as f32),
+            );
         }
         for (i, color) in row.iter_mut().enumerate() {
             let mut color_samples = Color::black();
@@ -272,12 +275,7 @@ fn render_image(
     }
 
     // We're done!
-    status_transmitter
-        .send(ProcStatus {
-            thread_id: thread_id,
-            fraction_complete: 1.0,
-        })
-        .unwrap();
+    send_fraction_complete_status(1.);
 
     image
 }
