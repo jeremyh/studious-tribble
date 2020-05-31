@@ -21,7 +21,7 @@ use crate::material::Scatter;
 use crate::ray::Ray;
 use crate::scene::Scene;
 use crate::time::format_rough_duration;
-use crate::vec3::Vec3;
+use crate::vec3::{randf, Vec3};
 
 mod camera;
 mod color;
@@ -260,10 +260,8 @@ where
 
             for s in 0..samples {
                 let ray: Ray = camera.ray(
-                    (i as F + rand::random::<F>())
-                        / (width as F),
-                    (j as F + rand::random::<F>())
-                        / (height as F),
+                    (i as F + randf()) / (width as F),
+                    (j as F + randf()) / (height as F),
                 );
 
                 color_samples +=

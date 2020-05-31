@@ -1,6 +1,6 @@
 use crate::{ray::Ray, vec3::Vec3};
 
-use crate::vec3::{F, PI};
+use crate::vec3::{randf, F, PI};
 
 pub struct Camera {
     lower_left_corner: Vec3,
@@ -65,11 +65,7 @@ impl Camera {
 
 fn random_in_unit_disk() -> Vec3 {
     loop {
-        let rand_disc = Vec3::new(
-            rand::random(),
-            rand::random(),
-            0.,
-        );
+        let rand_disc = Vec3::new(randf(), randf(), 0.);
         let p = 2. * rand_disc - Vec3::new(1., 1., 0.);
         if p.squared_length() < 1. {
             return p;

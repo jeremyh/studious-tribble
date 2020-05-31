@@ -1,7 +1,7 @@
 use crate::hitable::Sphere;
 use crate::material::{Dialectric, Lambertian, Metal};
 use crate::scene::Scene;
-use crate::vec3::Vec3;
+use crate::vec3::{randf, Vec3};
 use crate::vec3::{F, PI};
 
 pub(crate) fn random_scene() -> Scene {
@@ -39,11 +39,11 @@ pub(crate) fn random_scene() -> Scene {
 
     for a in -11..11 {
         for b in -11..11 {
-            let choose_mat: F = rand::random::<F>();
+            let choose_mat: F = randf();
             let center = Vec3::new(
-                (a as F) + 0.9 * rand::random::<F>(),
+                (a as F) + 0.9 * randf(),
                 0.2,
-                (b as F) + 0.9 * rand::random::<F>(),
+                (b as F) + 0.9 * randf(),
             );
 
             if (center - Vec3::new(4., 0.2, 0.))

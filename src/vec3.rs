@@ -4,6 +4,11 @@ use std::ops;
 pub type F = f32;
 pub const PI: F = std::f64::consts::PI as F;
 
+/// Rand between 0-1. Centralised so that I could experiment with different rand functions easily..
+pub fn randf() -> F {
+    rand::random()
+}
+
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Vec3 {
     pub x: F,
@@ -28,11 +33,7 @@ impl Vec3 {
     }
 
     pub fn random() -> Self {
-        Self::new(
-            rand::random(),
-            rand::random(),
-            rand::random(),
-        )
+        Self::new(randf(), randf(), randf())
     }
     pub fn length(&self) -> F {
         self.squared_length().sqrt()

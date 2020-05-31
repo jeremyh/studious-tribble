@@ -1,6 +1,6 @@
 use crate::hitable::Hit;
 use crate::ray::Ray;
-use crate::vec3::{Vec3, F};
+use crate::vec3::{randf, Vec3, F};
 use rand::distributions::{Distribution, Standard};
 use rand::Rng;
 
@@ -146,7 +146,7 @@ impl Material for Dialectric {
             &outward_normal,
             ni_over_nt,
         ) {
-            if rand::random::<F>()
+            if randf()
                 < schlick(cosine, self.reflective_index)
             {
                 reflected
