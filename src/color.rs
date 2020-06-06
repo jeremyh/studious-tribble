@@ -1,18 +1,45 @@
 use crate::vec3::{Vec3, F};
 use core::ops;
-use std::iter;
+use std::fmt::{Display, Formatter};
+use std::{fmt, iter};
 
 #[derive(PartialEq, Debug, Copy, Clone)]
 pub struct Color {
     v: Vec3,
 }
 
+/// Simple RGB 24-bit color
 #[derive(PartialEq, Debug, Eq, Copy, Clone, Default)]
 pub struct WebColor([u8; 3]);
-
+impl WebColor {
+    pub(crate) fn r(self) -> u8 {
+        self.0[0]
+    }
+    pub(crate) fn g(self) -> u8 {
+        self.0[1]
+    }
+    pub(crate) fn b(self) -> u8 {
+        self.0[2]
+    }
+}
 impl From<WebColor> for [u8; 3] {
     fn from(c: WebColor) -> Self {
         c.0
+    }
+}
+impl Display for WebColor {
+    fn fmt(
+        &self,
+        f: &mut Formatter<'_>,
+    ) -> fmt::Result {
+        write!(
+            f,
+            "#{:02x}{:02x}{:02x}",
+            self.r(),
+            self.g(),
+            self.b()
+        )?;
+        Ok(())
     }
 }
 
@@ -48,11 +75,11 @@ impl Color {
     }
 
     pub fn web_color(&self) -> WebColor {
-        let gamma_correct = |i: F| (i.powf(1.0 / 2.2));
+        let gamma_correct = |i: F| (i.powf(1.0 / 1.8));
         let to8 =
-            |i: F| (transfer_709(i) * 255.99) as u8;
+            |i: F| (gamma_correct(i) * 255.99) as u8;
 
-        let c = ycbcr(self.v);
+        let c = self.v;
         WebColor([to8(c.x), to8(c.y), to8(c.z)])
     }
 
@@ -65,24 +92,6 @@ impl Color {
     }
 }
 
-fn transfer_709(p: F) -> F {
-    if p >= 0.018 {
-        1.099 * p.powf(0.45) - 0.099
-    } else {
-        4.5 * p
-    }
-}
-
-fn ycbcr(rgb: Vec3) -> Vec3 {
-    let (r, g, b) =
-        (rgb.x * 255., rgb.y * 255., rgb.z * 255.);
-
-    let y = 0. + (0.299 * r + 0.587 * g + 0.114 * b);
-    let cb = 128. + (-0.169 * r + -0.331 * g + 0.5 * b);
-    let cr = 128. + (0.5 * r + -0.419 * g + -0.081 * b);
-
-    Vec3::new(y / 255., cb / 255., cr / 255.)
-}
 impl From<Vec3> for Color {
     fn from(v: Vec3) -> Self {
         Color { v }
@@ -129,5 +138,18 @@ mod tests {
             // With gamma:
             WebColor([153, 255, 0])
         )
+    }
+
+    #[test]
+    fn display_web_color() {
+        assert_eq!(
+            format!("{}", WebColor([0, 0, 0])),
+            "#000000"
+        );
+
+        assert_eq!(
+            format!("{}", WebColor([255, 153, 0])),
+            "#ff9900"
+        );
     }
 }
