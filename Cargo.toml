@@ -20,12 +20,24 @@ features = [
     "run-cargo-fmt"
 ]
 
+[profile.release]
+# lto = true
+
+# No parallel codegen
+# codegen-units = 1
+
+# opt-level = 3
+
+[profile.dev.package.backtrace]
+opt-level = 3
+
 [dependencies]
-anyhow = "1.0"
 structopt="0.3"
 
 cargo-husky = "1"
 rand = "0.7"
+color-eyre = { version = "0.3.4", default-features = false }
+eyre = "0.4.3"
 
 
 

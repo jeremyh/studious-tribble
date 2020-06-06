@@ -1,6 +1,7 @@
 /target
 .idea
 .vscode
+*.ppm
 
 image.ppm
 

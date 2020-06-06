@@ -87,7 +87,7 @@ struct Opt {
     threads: usize,
 }
 
-fn main() -> Result<(), anyhow::Error> {
+fn main() -> color_eyre::Result<()> {
     let opt: Opt = Opt::from_args();
 
     let scene = scenes::random_scene();
@@ -136,7 +136,7 @@ fn render(
     path: &Path,
     samples: u16,
     thread_count: usize,
-) -> Result<(), anyhow::Error> {
+) -> color_eyre::Result<()> {
     let start = Instant::now();
 
     let rays_to_trace = (width as u64)

@@ -8,7 +8,13 @@ pub struct Color {
 }
 
 #[derive(PartialEq, Debug, Eq, Copy, Clone, Default)]
-pub struct WebColor(pub u8, pub u8, pub u8);
+pub struct WebColor([u8; 3]);
+
+impl From<WebColor> for [u8; 3] {
+    fn from(c: WebColor) -> Self {
+        c.0
+    }
+}
 
 impl Color {
     pub fn new(r: F, g: F, b: F) -> Color {
@@ -42,15 +48,12 @@ impl Color {
     }
 
     pub fn web_color(&self) -> WebColor {
-        let gamma_correct = |i: F| (i.powf(1.0 / 1.8));
+        let gamma_correct = |i: F| (i.powf(1.0 / 2.2));
         let to8 =
-            |i: F| (gamma_correct(i) * 255.99) as u8;
+            |i: F| (transfer_709(i) * 255.99) as u8;
 
-        WebColor(
-            to8(self.v.x),
-            to8(self.v.y),
-            to8(self.v.z),
-        )
+        let c = ycbcr(self.v);
+        WebColor([to8(c.x), to8(c.y), to8(c.z)])
     }
 
     pub fn darken(&self, a: F) -> Self {
@@ -62,6 +65,24 @@ impl Color {
     }
 }
 
+fn transfer_709(p: F) -> F {
+    if p >= 0.018 {
+        1.099 * p.powf(0.45) - 0.099
+    } else {
+        4.5 * p
+    }
+}
+
+fn ycbcr(rgb: Vec3) -> Vec3 {
+    let (r, g, b) =
+        (rgb.x * 255., rgb.y * 255., rgb.z * 255.);
+
+    let y = 0. + (0.299 * r + 0.587 * g + 0.114 * b);
+    let cb = 128. + (-0.169 * r + -0.331 * g + 0.5 * b);
+    let cr = 128. + (0.5 * r + -0.419 * g + -0.081 * b);
+
+    Vec3::new(y / 255., cb / 255., cr / 255.)
+}
 impl From<Vec3> for Color {
     fn from(v: Vec3) -> Self {
         Color { v }
@@ -106,7 +127,7 @@ mod tests {
             // Without Gamma correction:
             // (102, 255, 0)
             // With gamma:
-            WebColor(153, 255, 0)
+            WebColor([153, 255, 0])
         )
     }
 }

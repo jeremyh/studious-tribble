@@ -1,8 +1,11 @@
-use crate::color::{Color, WebColor};
+use crate::color::Color;
 use std::fs::File;
 use std::io::BufWriter;
 use std::io::Write as IoWrite;
 
+use eyre::eyre;
+
+use crate::vec3::{Vec3, F};
 use std::{ops::AddAssign, path::Path};
 
 pub struct Image {
@@ -61,6 +64,7 @@ impl Image {
         image
     }
 
+    /// Loop over every pixel, top to bottom, left to right.
     pub fn for_each<TakePixel>(&self, mut f: TakePixel)
     where
         TakePixel: FnMut(usize, usize, &Color),
@@ -78,28 +82,37 @@ impl Image {
     pub fn write(
         &self,
         path: &Path,
-    ) -> Result<(), anyhow::Error> {
+    ) -> color_eyre::Result<()> {
+        if path
+            .extension()
+            .unwrap_or_default()
+            .to_str()
+            .expect("Non-utf-8 file extension")
+            != "ppm"
+        {
+            return Err(eyre!(
+                "Only PAM image files are supported. Got {:?}", path.extension().unwrap_or_default()
+            ));
+        }
         let image = self;
         let mut o = BufWriter::new(File::create(path)?);
         writeln!(
             &mut o,
-            "P3\n{nx} {ny}\n255",
+            "P6\n{nx} {ny}\n255\n",
             nx = image.width(),
-            ny = image.height()
+            ny = image.height(),
         )?;
 
         image.for_each(move |_, _, color: &Color| {
-            let WebColor(r, g, b) = color.web_color();
-            writeln!(
-            &mut o,
-            "{:?} {:?} {:?}",
-            r, g, b,
-        ).unwrap();
+            let pixel: [u8; 3] =
+                color.web_color().into();
+            o.write_all(&pixel).unwrap();
         });
 
         Ok(())
     }
 }
+
 impl Into<Vec<Vec<Color>>> for Image {
     fn into(self) -> Vec<Vec<Color>> {
         self.image
