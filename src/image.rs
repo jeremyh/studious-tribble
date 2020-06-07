@@ -3,7 +3,8 @@ use std::fs::File;
 use std::io::Write as IoWrite;
 use std::io::{BufWriter, Write};
 
-use byteorder::{ByteOrder, LittleEndian};
+use byteorder::WriteBytesExt;
+use byteorder::{BigEndian, ByteOrder, LittleEndian};
 use eyre::eyre;
 
 use crate::vec3::{Vec3, F};
@@ -90,10 +91,16 @@ impl Image {
             .to_str()
             .expect("Non-utf-8 file extension")
         {
+            "ff" => {
+                write_farbfeld_file(
+                    self,
+                    BufWriter::new(File::create(path)?),
+                )
+            }
             "ppm" => {
                 write_ppm_file(
                     self,
-                    BufWriter::new(File::create(path)?)
+                    BufWriter::new(File::create(path)?),
                 )
             }
             "tga" => {
@@ -103,7 +110,7 @@ impl Image {
                 )
             }
             _ => {
-                 Err(eyre!(
+                Err(eyre!(
                 "Unsupported output image extension (try. Got {:?}", path.extension().unwrap_or_default()
             ))
             }
@@ -116,11 +123,13 @@ impl Into<Vec<Vec<Color>>> for Image {
         self.image
     }
 }
+
 impl Into<Image> for Vec<Vec<Color>> {
     fn into(self) -> Image {
         Image { image: self }
     }
 }
+
 impl AddAssign for Image {
     fn add_assign(&mut self, rhs: Self) {
         for (j, row) in
@@ -161,8 +170,40 @@ where
     out.write_all(&header)?;
 
     image.for_each(move |_, _, color: &Color| {
-        let pixel: [u8; 3] = color.web_color().into();
+        let pixel: [u8; 3] =
+            color.to_web_color().into();
         out.write_all(&pixel).unwrap();
+    });
+
+    Ok(())
+}
+
+/// Write as farbfeld image format
+fn write_farbfeld_file<O>(
+    image: &Image,
+    mut out: O,
+) -> color_eyre::Result<()>
+where
+    O: Write,
+{
+    out.write_all(b"farbfeld")?;
+
+    out.write_u32::<BigEndian>(image.width() as u32)?;
+    out.write_u32::<BigEndian>(image.height() as u32)?;
+
+    image.for_each(move |_, _, color: &Color| {
+        let color = color.gamma_corrected();
+        let mut write_pixel = |f: F| {
+            out.write_u16::<BigEndian>(
+                (f * (u16::max_value() as F)) as u16,
+            )
+        };
+
+        write_pixel(color.r()).unwrap();
+        write_pixel(color.g()).unwrap();
+        write_pixel(color.b()).unwrap();
+        // Alpha
+        out.write_all(&[255, 255]).unwrap();
     });
 
     Ok(())
@@ -184,7 +225,7 @@ where
     )?;
 
     image.for_each(move |_, _, color: &Color| {
-        let p = color.web_color();
+        let p = color.to_web_color();
         writeln!(
             &mut o,
             "{:?} {:?} {:?}",

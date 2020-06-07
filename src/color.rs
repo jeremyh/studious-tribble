@@ -50,6 +50,16 @@ impl Color {
         }
     }
 
+    pub fn r(&self) -> F {
+        self.v.x
+    }
+    pub fn g(&self) -> F {
+        self.v.y
+    }
+    pub fn b(&self) -> F {
+        self.v.z
+    }
+
     pub fn white() -> Color {
         Color::new(1., 1., 1.)
     }
@@ -73,13 +83,19 @@ impl Color {
 
         Color::from(start * (1. - t) + end * t)
     }
-
-    pub fn web_color(&self) -> WebColor {
+    pub fn gamma_corrected(self) -> Self {
         let gamma_correct = |i: F| (i.powf(1.0 / 1.8));
-        let to8 =
-            |i: F| (gamma_correct(i) * 255.99) as u8;
+        Self::new(
+            gamma_correct(self.v.x),
+            gamma_correct(self.v.y),
+            gamma_correct(self.v.z),
+        )
+    }
 
-        let c = self.v;
+    pub fn to_web_color(&self) -> WebColor {
+        let to8 = |i: F| (i * 255.99) as u8;
+
+        let c = self.gamma_corrected().v;
         WebColor([to8(c.x), to8(c.y), to8(c.z)])
     }
 
@@ -132,7 +148,7 @@ mod tests {
     fn conversion_from_ratio() {
         assert_eq!(
             Color::from(Vec3::new(0.4, 1.0, 0.0))
-                .web_color(),
+                .to_web_color(),
             // Without Gamma correction:
             // (102, 255, 0)
             // With gamma:
