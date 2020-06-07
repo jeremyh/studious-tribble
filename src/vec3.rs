@@ -2,6 +2,7 @@ use std::ops;
 
 // Should we render with f32s or f64s?
 pub type F = f32;
+
 pub const PI: F = std::f64::consts::PI as F;
 
 /// Rand between 0-1. Centralised so that I could experiment with different rand functions easily..
@@ -184,14 +185,15 @@ mod tests {
 
     #[test]
     fn length() {
-        assert_eq!(
+        assert!(
             Vec3 {
                 x: 6.,
                 y: 3.,
                 z: 7.,
             }
-            .length(),
-            9.69536
+            .length()
+                - 9.69536
+                <= f32::EPSILON
         );
     }
 

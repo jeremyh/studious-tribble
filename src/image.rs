@@ -1,13 +1,10 @@
-use crate::color::{Color, WebColor};
+use crate::color::Color;
 use std::fs::File;
-use std::io::Write as IoWrite;
 use std::io::{BufWriter, Write};
 
-use byteorder::WriteBytesExt;
-use byteorder::{BigEndian, ByteOrder, LittleEndian};
 use eyre::eyre;
 
-use crate::vec3::{Vec3, F};
+use crate::vec3::F;
 use std::{ops::AddAssign, path::Path};
 
 pub struct Image {
@@ -155,15 +152,12 @@ where
     let mut header = [0u8; 18];
 
     header[2] = 2;
-    LittleEndian::write_u16(
-        &mut header[12..14],
-        image.width() as u16,
+    header[12..14].clone_from_slice(
+        &(image.width() as u16).to_le_bytes(),
     );
-    LittleEndian::write_u16(
-        &mut header[14..16],
-        image.height() as u16,
+    header[14..16].clone_from_slice(
+        &(image.height() as u16).to_le_bytes(),
     );
-
     header[16] = 24;
     header[17] = 32;
 
@@ -187,15 +181,19 @@ where
     O: Write,
 {
     out.write_all(b"farbfeld")?;
-
-    out.write_u32::<BigEndian>(image.width() as u32)?;
-    out.write_u32::<BigEndian>(image.height() as u32)?;
+    out.write_all(
+        &(image.width() as u32).to_be_bytes(),
+    )?;
+    out.write_all(
+        &(image.height() as u32).to_be_bytes(),
+    )?;
 
     image.for_each(move |_, _, color: &Color| {
         let color = color.gamma_corrected();
         let mut write_pixel = |f: F| {
-            out.write_u16::<BigEndian>(
-                (f * (u16::max_value() as F)) as u16,
+            out.write(
+                &((f * (u16::max_value() as F)) as u16)
+                    .to_be_bytes(),
             )
         };
 
