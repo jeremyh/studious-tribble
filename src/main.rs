@@ -169,7 +169,12 @@ fn render(
                         thread_id,
                         fraction_complete,
                     })
-                    .unwrap()
+                    .unwrap_or_else(|e|
+                        eprintln!(
+                            "Cannot report processing status from thread {}: {:?}",
+                            thread_id, e
+                        )
+                    )
                 },
             )
         }));
@@ -180,7 +185,12 @@ fn render(
     let mut images: Vec<Image> =
         Vec::with_capacity(children.len());
     for child in children {
-        images.push(child.join().unwrap().into());
+        images.push(
+            child
+                .join()
+                .expect("Failed thread: cannot join")
+                .into(),
+        );
     }
 
     Image::average(&mut images).write(path)?;

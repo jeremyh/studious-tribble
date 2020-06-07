@@ -44,8 +44,9 @@ impl Image {
 
     pub fn average(images: &mut [Self]) -> Image {
         let len = images.len() as f32;
-        let (first, remaining) =
-            images.split_first().unwrap();
+        let (first, remaining) = images
+            .split_first()
+            .expect("cannot average zero images");
         let mut image =
             Image::new(first.width(), first.height());
         for (j, row) in
@@ -64,18 +65,27 @@ impl Image {
     }
 
     /// Loop over every pixel, top to bottom, left to right.
-    pub fn for_each<TakePixel>(&self, mut f: TakePixel)
+    pub fn for_each_pixel<TakePixel>(
+        &self,
+        mut f: TakePixel,
+    ) -> color_eyre::Result<()>
     where
-        TakePixel: FnMut(usize, usize, &Color),
+        TakePixel: FnMut(
+            usize,
+            usize,
+            &Color,
+        )
+            -> color_eyre::Result<()>,
     {
         for (j, row) in
             self.image.iter().rev().enumerate()
         {
             for (i, out_color) in row.iter().enumerate()
             {
-                f(j, i, out_color);
+                f(j, i, out_color)?;
             }
         }
+        Ok(())
     }
 
     pub fn write(
@@ -150,7 +160,6 @@ where
     O: Write,
 {
     let mut header = [0u8; 18];
-
     header[2] = 2;
     header[12..14].clone_from_slice(
         &(image.width() as u16).to_le_bytes(),
@@ -162,12 +171,14 @@ where
     header[17] = 32;
 
     out.write_all(&header)?;
-
-    image.for_each(move |_, _, color: &Color| {
-        let pixel: [u8; 3] =
-            color.to_web_color().into();
-        out.write_all(&pixel).unwrap();
-    });
+    image.for_each_pixel(
+        move |_, _, color: &Color| {
+            let pixel: [u8; 3] =
+                color.to_web_color().into();
+            out.write_all(&pixel)?;
+            Ok(())
+        },
+    )?;
 
     Ok(())
 }
@@ -188,21 +199,25 @@ where
         &(image.height() as u32).to_be_bytes(),
     )?;
 
-    image.for_each(move |_, _, color: &Color| {
-        let color = color.gamma_corrected();
-        let mut write_pixel = |f: F| {
-            out.write(
-                &((f * (u16::max_value() as F)) as u16)
-                    .to_be_bytes(),
-            )
-        };
+    image.for_each_pixel(
+        move |_, _, color: &Color| {
+            let color = color.gamma_corrected();
+            let mut write_pixel = |f: F| {
+                out.write(
+                    &((f * (u16::max_value() as F))
+                        as u16)
+                        .to_be_bytes(),
+                )
+            };
 
-        write_pixel(color.r()).unwrap();
-        write_pixel(color.g()).unwrap();
-        write_pixel(color.b()).unwrap();
-        // Alpha
-        out.write_all(&[255, 255]).unwrap();
-    });
+            write_pixel(color.r())?;
+            write_pixel(color.g())?;
+            write_pixel(color.b())?;
+            // Alpha
+            out.write_all(&[255, 255])?;
+            Ok(())
+        },
+    )?;
 
     Ok(())
 }
@@ -222,17 +237,19 @@ where
         ny = image.height()
     )?;
 
-    image.for_each(move |_, _, color: &Color| {
-        let p = color.to_web_color();
-        writeln!(
-            &mut o,
-            "{:?} {:?} {:?}",
-            p.r(),
-            p.g(),
-            p.b(),
-        )
-        .unwrap();
-    });
+    image.for_each_pixel(
+        move |_, _, color: &Color| {
+            let p = color.to_web_color();
+            writeln!(
+                &mut o,
+                "{:?} {:?} {:?}",
+                p.r(),
+                p.g(),
+                p.b(),
+            )?;
+            Ok(())
+        },
+    )?;
 
     Ok(())
 }
