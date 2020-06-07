@@ -169,12 +169,12 @@ fn render(
                         thread_id,
                         fraction_complete,
                     })
-                    .unwrap_or_else(|e|
+                    .unwrap_or_else(|e| {
                         eprintln!(
                             "Cannot report processing status from thread {}: {:?}",
                             thread_id, e
                         )
-                    )
+                    })
                 },
             )
         }));

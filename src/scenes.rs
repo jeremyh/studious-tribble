@@ -53,14 +53,15 @@ pub(crate) fn random_scene() -> Scene {
                 scene.add(Box::new(Sphere {
                     center,
                     radius: 0.2,
-                    material:
-
-                    if choose_mat < 0.8 {
+                    material: if choose_mat < 0.8 {
                         Box::new(rand::random::<Lambertian>())
                     } else if choose_mat < 0.95 {
                         Box::new(rand::random::<Metal>())
-                    } else { // glass
-                        Box::new(Dialectric { reflective_index: 1.5 })
+                    } else {
+                        // glass
+                        Box::new(Dialectric {
+                            reflective_index: 1.5,
+                        })
                     },
                 }));
             }

@@ -98,29 +98,13 @@ impl Image {
             .to_str()
             .expect("Non-utf-8 file extension")
         {
-            "ff" => {
-                write_farbfeld_file(
-                    self,
-                    BufWriter::new(File::create(path)?),
-                )
-            }
-            "ppm" => {
-                write_ppm_file(
-                    self,
-                    BufWriter::new(File::create(path)?),
-                )
-            }
-            "tga" => {
-                write_tga_file(
-                    self,
-                    BufWriter::new(File::create(path)?),
-                )
-            }
-            _ => {
-                Err(eyre!(
-                "Unsupported output image extension (try. Got {:?}", path.extension().unwrap_or_default()
-            ))
-            }
+            "ff" => write_farbfeld_file(self, BufWriter::new(File::create(path)?)),
+            "ppm" => write_ppm_file(self, BufWriter::new(File::create(path)?)),
+            "tga" => write_tga_file(self, BufWriter::new(File::create(path)?)),
+            _ => Err(eyre!(
+                "Unsupported output image extension (try. Got {:?}",
+                path.extension().unwrap_or_default()
+            )),
         }
     }
 }
