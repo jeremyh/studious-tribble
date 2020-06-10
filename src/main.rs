@@ -34,6 +34,9 @@ mod scenes;
 mod time;
 mod vec3;
 
+type Error = Box<dyn std::error::Error>;
+type Res<T> = Result<T, Error>;
+
 const MAX_DEPTH: i32 = 50;
 
 fn ray_color(
@@ -87,7 +90,7 @@ struct Opt {
     threads: usize,
 }
 
-fn main() -> color_eyre::Result<()> {
+fn main() -> Res<()> {
     let opt: Opt = Opt::from_args();
 
     let scene = scenes::random_scene();
@@ -136,7 +139,7 @@ fn render(
     path: &Path,
     samples: u16,
     thread_count: usize,
-) -> color_eyre::Result<()> {
+) -> Res<()> {
     let start = Instant::now();
 
     let rays_to_trace = (width as u64)

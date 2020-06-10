@@ -1,15 +1,32 @@
-use crate::color::Color;
+use std::fmt::{Display, Formatter};
 use std::fs::File;
 use std::io::{BufWriter, Write};
+use std::{fmt, ops::AddAssign, path::Path};
 
-use eyre::eyre;
-
+use crate::color::Color;
 use crate::vec3::F;
-use std::{ops::AddAssign, path::Path};
+use crate::Res;
 
 pub struct Image {
     image: Vec<Vec<Color>>,
 }
+
+#[derive(Debug)]
+pub struct UnsupportedFormatError {
+    unsupported_extension: String,
+}
+
+impl Display for UnsupportedFormatError {
+    fn fmt(
+        &self,
+        f: &mut Formatter<'_>,
+    ) -> fmt::Result {
+        write!(f, "Unsupported image type {:?}. Perhaps you want '.ff'?", &self.unsupported_extension)?;
+        Ok(())
+    }
+}
+
+impl std::error::Error for UnsupportedFormatError {}
 
 impl Image {
     pub fn new(width: usize, height: usize) -> Self {
@@ -68,14 +85,10 @@ impl Image {
     pub fn for_each_pixel<TakePixel>(
         &self,
         mut f: TakePixel,
-    ) -> color_eyre::Result<()>
+    ) -> Res<()>
     where
-        TakePixel: FnMut(
-            usize,
-            usize,
-            &Color,
-        )
-            -> color_eyre::Result<()>,
+        TakePixel:
+            FnMut(usize, usize, &Color) -> Res<()>,
     {
         for (j, row) in
             self.image.iter().rev().enumerate()
@@ -88,23 +101,35 @@ impl Image {
         Ok(())
     }
 
-    pub fn write(
-        &self,
-        path: &Path,
-    ) -> color_eyre::Result<()> {
+    pub fn write(&self, path: &Path) -> Res<()> {
         match path
             .extension()
             .unwrap_or_default()
             .to_str()
             .expect("Non-utf-8 file extension")
         {
-            "ff" => write_farbfeld_file(self, BufWriter::new(File::create(path)?)),
-            "ppm" => write_ppm_file(self, BufWriter::new(File::create(path)?)),
-            "tga" => write_tga_file(self, BufWriter::new(File::create(path)?)),
-            _ => Err(eyre!(
-                "Unsupported output image extension (try. Got {:?}",
-                path.extension().unwrap_or_default()
-            )),
+            "ff" => write_farbfeld_file(
+                self,
+                BufWriter::new(File::create(path)?),
+            ),
+            "ppm" => write_ppm_file(
+                self,
+                BufWriter::new(File::create(path)?),
+            ),
+            "tga" => write_tga_file(
+                self,
+                BufWriter::new(File::create(path)?),
+            ),
+            _ => {
+                Err(Box::new(UnsupportedFormatError {
+                    unsupported_extension: path
+                        .extension()
+                        .unwrap_or_default()
+                        .to_str()
+                        .unwrap_or("<invalid-utf-8>")
+                        .to_owned(),
+                }))
+            }
         }
     }
 }
@@ -139,7 +164,7 @@ impl AddAssign for Image {
 fn write_tga_file<O>(
     image: &Image,
     mut out: O,
-) -> color_eyre::Result<()>
+) -> Res<()>
 where
     O: Write,
 {
@@ -171,7 +196,7 @@ where
 fn write_farbfeld_file<O>(
     image: &Image,
     mut out: O,
-) -> color_eyre::Result<()>
+) -> Res<()>
 where
     O: Write,
 {
@@ -207,10 +232,7 @@ where
 }
 
 /// Write as NetPPM file format (text-based)
-fn write_ppm_file<O>(
-    image: &Image,
-    mut o: O,
-) -> color_eyre::Result<()>
+fn write_ppm_file<O>(image: &Image, mut o: O) -> Res<()>
 where
     O: Write,
 {

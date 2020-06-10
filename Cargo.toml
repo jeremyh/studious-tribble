@@ -23,13 +23,8 @@ features = [
 
 # opt-level = 3
 
-[profile.dev.package.backtrace]
-opt-level = 3
-
 [dependencies]
 structopt="0.3"
 
 rand = "0.7"
-color-eyre = { version = "0.3.4", default-features = false }
-eyre = "0.4.3"
 
