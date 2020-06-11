@@ -38,6 +38,7 @@ type Error = Box<dyn std::error::Error>;
 type Res<T> = Result<T, Error>;
 
 const MAX_DEPTH: i32 = 50;
+const CLEAR_LINE: &str = "\x1b[2K";
 
 fn ray_color(
     ray: &Ray,
@@ -96,8 +97,16 @@ fn main() -> Res<()> {
     let scene = scenes::random_scene();
     let aspect = (opt.width as F) / (opt.height as F);
     eprintln!(
-        "Creating {}x{} with {} samples and {} threads to {:?}",
-        opt.width, opt.height, opt.samples, opt.threads, opt.output
+        "{}x{}, {} samples, {} threads.\nOutput: \"{}\"",
+        opt.width,
+        opt.height,
+        opt.samples,
+        opt.threads,
+        bold(
+            opt.output
+                .to_str()
+                .unwrap_or("<non-utf-8>")
+        )
     );
 
     let look_from = Vec3::new(12., 6., 0.51);
@@ -145,7 +154,6 @@ fn render(
     let rays_to_trace = (width as u64)
         * (height as u64)
         * (samples as u64);
-    eprintln!("{} rays   ", rays_to_trace);
 
     let mut children = Vec::with_capacity(thread_count);
     let samples_per_thread =
@@ -199,8 +207,9 @@ fn render(
     Image::average(&mut images).write(path)?;
 
     eprintln!(
-        "\rRendered in {:<30}",
-        format_rough_duration(start.elapsed()),
+        "\r{} rays, rendered in {:<30}",
+        rays_to_trace,
+        bold(&format_rough_duration(start.elapsed())),
     );
     eprintln!(
         "{} rays/millisecond",
@@ -210,12 +219,16 @@ fn render(
     Ok(())
 }
 
+fn bold(text: &str) -> String {
+    format!("\x1b[1m{}\x1b[m", text)
+}
+
 fn track_thread_progress(
     threads: usize,
     rx: Receiver<ProcStatus>,
 ) {
-    println!("Workers:");
     let mut statuses = vec![0.; threads];
+
     loop {
         // Drain any waiting thread statuses.
         for ProcStatus {
@@ -228,21 +241,52 @@ fn track_thread_progress(
 
         // Print statuses. If all are completed, we can exit.
         let mut are_finished = true;
-        for (i, f) in statuses.iter().enumerate() {
-            println!("\t{}: {:02.0}%", i, *f * 100.);
-            if *f < 1. {
+
+        println!();
+        for (thread_num, fraction_complete) in
+            statuses.iter().enumerate()
+        {
+            print!("{} {:2>} ", CLEAR_LINE, thread_num,);
+            print_progress_bar(*fraction_complete);
+            println!(
+                " {:2>2.0}% ",
+                *fraction_complete * 100.
+            );
+
+            if *fraction_complete < 1. {
                 are_finished = false;
             }
         }
+        println!();
 
         if are_finished {
             break;
         }
-        // Move cursor up for rerender
-        print!("\x1b[{}A", threads);
+        // We're redrawing. Move cursor back up the same number of lines
+        print!(
+            "\x1b[{}A",
+            // A line (progress bar) per thread, plus header and footer line.
+            threads + 2
+        );
         // Delay before rerender
         thread::sleep(Duration::from_millis(300));
     }
+}
+
+fn print_progress_bar(fraction_complete: f32) {
+    const PROGRESS_BAR_WIDTH: i16 = 40;
+    let asdf = "m▐▓▓▓▓▓▓▓▓▓▓▓▓░░░░░░░░▌  56";
+    print!("▐");
+    let columns_complete = (fraction_complete
+        * (PROGRESS_BAR_WIDTH as f32))
+        as i16;
+    for i in 0..(columns_complete) {
+        print!("▓")
+    }
+    for i in columns_complete..(PROGRESS_BAR_WIDTH) {
+        print!("░")
+    }
+    print!("▌");
 }
 
 fn render_image<St>(
