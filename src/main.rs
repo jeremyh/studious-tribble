@@ -22,6 +22,7 @@ use crate::ray::Ray;
 use crate::scene::Scene;
 use crate::time::format_rough_duration;
 use crate::vec3::{randf, Vec3};
+use std::io::Write;
 
 mod camera;
 mod color;
@@ -180,18 +181,18 @@ fn render(
                         thread_id,
                         fraction_complete,
                     })
-                    .unwrap_or_else(|e| {
-                        eprintln!(
-                            "Cannot report processing status from thread {}: {:?}",
-                            thread_id, e
-                        )
-                    })
+                        .unwrap_or_else(|e| {
+                            eprintln!(
+                                "Cannot report processing status from thread {}: {:?}",
+                                thread_id, e
+                            )
+                        })
                 },
             )
         }));
     }
 
-    track_thread_progress(thread_count, rx);
+    track_thread_progress(thread_count, rx)?;
 
     let mut images: Vec<Image> =
         Vec::with_capacity(children.len());
@@ -226,7 +227,7 @@ fn bold(text: &str) -> String {
 fn track_thread_progress(
     threads: usize,
     rx: Receiver<ProcStatus>,
-) {
+) -> Res<()> {
     let mut statuses = vec![0.; threads];
 
     loop {
@@ -241,52 +242,73 @@ fn track_thread_progress(
 
         // Print statuses. If all are completed, we can exit.
         let mut are_finished = true;
-
-        println!();
-        for (thread_num, fraction_complete) in
-            statuses.iter().enumerate()
         {
-            print!("{} {:2>} ", CLEAR_LINE, thread_num,);
-            print_progress_bar(*fraction_complete);
-            println!(
-                " {:2>2.0}% ",
-                *fraction_complete * 100.
-            );
+            let out = std::io::stdout();
+            let mut out = out.lock();
 
-            if *fraction_complete < 1. {
-                are_finished = false;
+            writeln!(out)?;
+            for (thread_num, fraction_complete) in
+                statuses.iter().enumerate()
+            {
+                write!(
+                    out,
+                    "{} {:2>} ",
+                    CLEAR_LINE, thread_num,
+                )?;
+                print_progress_bar(
+                    *fraction_complete,
+                    &mut out,
+                )?;
+                writeln!(
+                    out,
+                    " {:2>2.0}% ",
+                    *fraction_complete * 100.
+                )?;
+
+                if *fraction_complete < 1. {
+                    are_finished = false;
+                }
             }
-        }
-        println!();
+            writeln!(out)?;
 
-        if are_finished {
-            break;
+            if are_finished {
+                break Ok(());
+            }
+            // We're redrawing. Move cursor back up the same number of lines
+            write!(
+                out,
+                "\x1b[{}A",
+                // A line (progress bar) per thread, plus header and footer line.
+                threads + 2
+            )?;
         }
-        // We're redrawing. Move cursor back up the same number of lines
-        print!(
-            "\x1b[{}A",
-            // A line (progress bar) per thread, plus header and footer line.
-            threads + 2
-        );
+
         // Delay before rerender
         thread::sleep(Duration::from_millis(300));
     }
 }
 
-fn print_progress_bar(fraction_complete: f32) {
+fn print_progress_bar<W>(
+    fraction_complete: f32,
+    out: &mut W,
+) -> Res<()>
+where
+    W: Write,
+{
     const PROGRESS_BAR_WIDTH: i16 = 40;
     let asdf = "m▐▓▓▓▓▓▓▓▓▓▓▓▓░░░░░░░░▌  56";
-    print!("▐");
+    write!(out, "▐")?;
     let columns_complete = (fraction_complete
         * (PROGRESS_BAR_WIDTH as f32))
         as i16;
     for i in 0..(columns_complete) {
-        print!("▓")
+        write!(out, "▓")?;
     }
     for i in columns_complete..(PROGRESS_BAR_WIDTH) {
-        print!("░")
+        write!(out, "░")?;
     }
-    print!("▌");
+    write!(out, "▌")?;
+    Ok(())
 }
 
 fn render_image<St>(
