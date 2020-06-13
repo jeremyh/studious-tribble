@@ -288,13 +288,10 @@ fn track_thread_progress(
     }
 }
 
-fn print_progress_bar<W>(
+fn print_progress_bar(
     fraction_complete: f32,
-    out: &mut W,
-) -> Res<()>
-where
-    W: Write,
-{
+    out: &mut impl Write,
+) -> Res<()> {
     const PROGRESS_BAR_WIDTH: i16 = 40;
     let asdf = "m▐▓▓▓▓▓▓▓▓▓▓▓▓░░░░░░░░▌  56";
     write!(out, "▐")?;
@@ -311,17 +308,14 @@ where
     Ok(())
 }
 
-fn render_image<St>(
+fn render_image(
     scene: Arc<Scene>,
     camera: Arc<Camera>,
     width: usize,
     height: usize,
     samples: u16,
-    send_fraction_complete_status: St,
-) -> Vec<Vec<Color>>
-where
-    St: Fn(f32),
-{
+    send_fraction_complete_status: impl Fn(f32),
+) -> Vec<Vec<Color>> {
     let mut image =
         vec![vec![Color::black(); width]; height];
 

@@ -82,12 +82,12 @@ impl Image {
     }
 
     /// Loop over every pixel, top to bottom, left to right.
-    pub fn for_each_pixel<TakePixel>(
+    pub fn for_each_pixel<PixelTaker>(
         &self,
-        mut f: TakePixel,
+        mut f: PixelTaker,
     ) -> Res<()>
     where
-        TakePixel:
+        PixelTaker:
             FnMut(usize, usize, &Color) -> Res<()>,
     {
         for (j, row) in
@@ -161,13 +161,10 @@ impl AddAssign for Image {
 }
 
 /// Write as TARGA file format
-fn write_tga_file<O>(
+fn write_tga_file(
     image: &Image,
-    mut out: O,
-) -> Res<()>
-where
-    O: Write,
-{
+    mut out: impl Write,
+) -> Res<()> {
     let mut header = [0u8; 18];
     header[2] = 2;
     header[12..14].clone_from_slice(
@@ -193,13 +190,10 @@ where
 }
 
 /// Write as farbfeld image format
-fn write_farbfeld_file<O>(
+fn write_farbfeld_file(
     image: &Image,
-    mut out: O,
-) -> Res<()>
-where
-    O: Write,
-{
+    mut out: impl Write,
+) -> Res<()> {
     out.write_all(b"farbfeld")?;
     out.write_all(
         &(image.width() as u32).to_be_bytes(),
@@ -232,10 +226,10 @@ where
 }
 
 /// Write as NetPPM file format (text-based)
-fn write_ppm_file<O>(image: &Image, mut o: O) -> Res<()>
-where
-    O: Write,
-{
+fn write_ppm_file(
+    image: &Image,
+    mut o: impl Write,
+) -> Res<()> {
     writeln!(
         &mut o,
         "P3\n{nx} {ny}\n255",
