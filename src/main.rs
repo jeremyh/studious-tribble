@@ -9,7 +9,7 @@ use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant};
 
-use structopt::StructOpt;
+use clap::Parser;
 
 use camera::Camera;
 use color::Color;
@@ -68,32 +68,29 @@ fn ray_color(
     Color::linear(Color::white(), Color::sky_blue(), t)
 }
 
-#[derive(Debug, StructOpt)]
-#[structopt(
-    name = "chambray",
-    about = "Create a ray-traced image"
-)]
-struct Opt {
-    #[structopt(short, long, default_value = "400")]
+#[derive(Debug, Parser)]
+#[command(author, version, about = "Create a ray-traced image", long_about = None)]
+struct Cli {
+    #[arg(long, default_value = "400")]
     width: usize,
-    #[structopt(short, long, default_value = "200")]
+    #[arg(long, default_value = "200")]
     height: usize,
 
-    #[structopt(
-        parse(from_os_str),
-        default_value = "image.ff"
+    #[arg(
+        value_name = "FILE",
+        default_value = "image.ppm"
     )]
     output: PathBuf,
 
-    #[structopt(long, default_value = "64")]
+    #[arg(long, default_value = "64")]
     samples: u16,
 
-    #[structopt(long, default_value = "8")]
+    #[arg(long, default_value = "8")]
     threads: usize,
 }
 
 fn main() -> Res<()> {
-    let opt: Opt = Opt::from_args();
+    let opt = Cli::parse();
 
     let scene = scenes::random_scene();
     let aspect = (opt.width as F) / (opt.height as F);

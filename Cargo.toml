@@ -24,7 +24,6 @@ features = [
 # opt-level = 3
 
 [dependencies]
-structopt="0.3"
-
-rand = "0.7"
+rand = "0.8.5"
+clap = { version = "4.3.23", features = ["derive"] }
 
