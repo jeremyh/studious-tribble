@@ -133,16 +133,15 @@ impl Image {
         }
     }
 }
-
-impl Into<Vec<Vec<Color>>> for Image {
-    fn into(self) -> Vec<Vec<Color>> {
-        self.image
+impl From<Image> for Vec<Vec<Color>> {
+    fn from(value: Image) -> Self {
+        value.image
     }
 }
 
-impl Into<Image> for Vec<Vec<Color>> {
-    fn into(self) -> Image {
-        Image { image: self }
+impl From<Vec<Vec<Color>>> for Image {
+    fn from(value: Vec<Vec<Color>>) -> Self {
+        Image { image: value }
     }
 }
 
@@ -180,7 +179,7 @@ fn write_tga_file(
     image.for_each_pixel(
         move |_, _, color: &Color| {
             let pixel: [u8; 3] =
-                color.to_web_color().into();
+                color.as_web_color().into();
             out.write_all(&pixel)?;
             Ok(())
         },
@@ -239,7 +238,7 @@ fn write_ppm_file(
 
     image.for_each_pixel(
         move |_, _, color: &Color| {
-            let p = color.to_web_color();
+            let p = color.as_web_color();
             writeln!(
                 &mut o,
                 "{:?} {:?} {:?}",

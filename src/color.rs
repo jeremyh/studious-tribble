@@ -9,7 +9,9 @@ pub struct Color {
 }
 
 /// Simple RGB 24-bit color
-#[derive(PartialEq, Debug, Eq, Copy, Clone, Default)]
+#[derive(
+    PartialEq, Debug, Eq, Copy, Clone, Default,
+)]
 pub struct WebColor([u8; 3]);
 impl WebColor {
     pub(crate) fn r(self) -> u8 {
@@ -92,7 +94,7 @@ impl Color {
         )
     }
 
-    pub fn to_web_color(&self) -> WebColor {
+    pub fn as_web_color(&self) -> WebColor {
         let to8 = |i: F| (i * 255.99) as u8;
 
         let c = self.gamma_corrected().v;
@@ -114,9 +116,9 @@ impl From<Vec3> for Color {
     }
 }
 
-impl Into<Vec3> for Color {
-    fn into(self) -> Vec3 {
-        self.v
+impl From<Color> for Vec3 {
+    fn from(value: Color) -> Self {
+        value.v
     }
 }
 
@@ -148,7 +150,7 @@ mod tests {
     fn conversion_from_ratio() {
         assert_eq!(
             Color::from(Vec3::new(0.4, 1.0, 0.0))
-                .to_web_color(),
+                .as_web_color(),
             // Without Gamma correction:
             // (102, 255, 0)
             // With gamma:

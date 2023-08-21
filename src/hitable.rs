@@ -12,7 +12,7 @@ pub struct Hit<'a> {
 
 pub trait Hitable {
     fn hit(
-        self: &Self,
+        &self,
         ray: &Ray,
         t: &Range<F>,
     ) -> Option<Hit>;
@@ -28,7 +28,7 @@ impl Hitable for Sphere<'_> {
     /// Does the ray hit our sphere?
     /// If so, return the time t of the hit.
     fn hit(
-        self: &Self,
+        &self,
         ray: &Ray,
         within_t: &Range<F>,
     ) -> Option<Hit> {

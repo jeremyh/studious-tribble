@@ -3,6 +3,12 @@
 set -eu
 
 cargo build --release
-./target/release/chambray --samples 100 -w 1400 -h 700
-feh image.ff &
+./target/release/chambray --samples 128 -w 1080 -h 720 image.ppm
+
+if [[ "$(uname)" == 'Darwin' ]];
+then
+	open image.ppm &
+else
+	gnome-open image.ppm &
+fi
 

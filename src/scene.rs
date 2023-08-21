@@ -7,13 +7,13 @@ pub struct Scene {
     things: Vec<Box<dyn Hitable + Send + Sync>>,
 }
 
-impl<'a> Scene {
+impl Scene {
     pub fn new() -> Self {
         Scene { things: vec![] }
     }
 
     pub fn add(
-        self: &mut Self,
+        &mut self,
         thing: Box<dyn Hitable + Send + Sync>,
     ) {
         self.things.push(thing);
@@ -21,7 +21,7 @@ impl<'a> Scene {
 }
 impl Hitable for Scene {
     fn hit(
-        self: &Self,
+        &self,
         ray: &Ray,
         t: &Range<F>,
     ) -> Option<Hit> {

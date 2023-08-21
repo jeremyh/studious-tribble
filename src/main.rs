@@ -47,7 +47,7 @@ fn ray_color(
     depth: i32,
 ) -> Color {
     if let Some(hit) =
-        scene.hit(&ray, &((0.001 as F)..F::INFINITY))
+        scene.hit(ray, &((0.001 as F)..F::INFINITY))
     {
         return if depth > MAX_DEPTH {
             Color::black()
@@ -85,10 +85,10 @@ struct Opt {
     )]
     output: PathBuf,
 
-    #[structopt(long, default_value = "16")]
+    #[structopt(long, default_value = "64")]
     samples: u16,
 
-    #[structopt(long, default_value = "3")]
+    #[structopt(long, default_value = "8")]
     threads: usize,
 }
 
