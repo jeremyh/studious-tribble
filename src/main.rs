@@ -77,8 +77,9 @@ struct Cli {
     height: usize,
 
     #[arg(
-        value_name = "FILE",
-        default_value = "image.ppm"
+        value_name = "OUTPUT_FILE",
+        default_value = "image.ppm",
+        help = "Output image path. Supported extensions are .ppm, .tga or .ff"
     )]
     output: PathBuf,
 

@@ -3,7 +3,7 @@
 set -eu
 
 cargo build --release
-./target/release/chambray --samples 128 --width 1080 --height 720 image.ppm
+./target/release/chambray --samples 128 --width 1440 --height 720 image.ppm
 
 if [[ "$(uname)" == 'Darwin' ]];
 then
